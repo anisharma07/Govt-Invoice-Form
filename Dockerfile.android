@@ -30,9 +30,6 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# Install Yarn
-RUN npm install -g yarn
-
 # Create Android SDK directory
 RUN mkdir -p ${ANDROID_HOME}/cmdline-tools
 
@@ -61,14 +58,13 @@ WORKDIR /app
 
 # Copy package files first for better caching
 COPY package*.json ./
-COPY yarn.lock* ./
 COPY ionic.config.json ./
 COPY capacitor.config.ts ./
 COPY tsconfig*.json ./
 COPY vite.config.ts ./
 
 # Install Node.js dependencies
-RUN yarn install --frozen-lockfile
+RUN npm ci
 
 # Copy source code
 COPY src/ ./src/
@@ -76,7 +72,7 @@ COPY public/ ./public/
 COPY index.html ./
 
 # Build the web application
-RUN yarn build
+RUN npm run build
 
 # Copy Capacitor Android project
 COPY android/ ./android/
@@ -135,12 +131,12 @@ echo "🔧 Android Development Environment Ready!"\n\
 echo "📍 Android SDK: $ANDROID_HOME"\n\
 echo "📍 Java Home: $JAVA_HOME"\n\
 echo "📍 Node Version: $(node --version)"\n\
-echo "📍 Yarn Version: $(yarn --version)"\n\
+echo "📍 npm Version: $(npm --version)"\n\
 echo "📍 Capacitor Version: $(npx cap --version)"\n\
 echo ""\n\
 echo "Available commands:"\n\
 echo "  /build-apk.sh     - Build release APK"\n\
-echo "  yarn dev          - Start development server"\n\
+echo "  npm run dev       - Start development server"\n\
 echo "  npx cap run android - Run on Android device/emulator"\n\
 echo ""\n\
 exec "$@"\n\

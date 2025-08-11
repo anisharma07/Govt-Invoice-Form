@@ -229,16 +229,16 @@ jobs:
       - name: 🔑 Setup Keystore
         if: steps.check-existing.outputs.skip-build == 'false'
         run: |
-          # Create keystore from secrets
-          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
-
-          # Create keystore.properties
+          # Create keystore.properties with base64 encoded keystore
           cat > android/keystore.properties << EOF
-          storeFile=release-key.jks
-          storePassword=${{ secrets.RELEASE_STORE_PASSWORD }}
-          keyAlias=${{ secrets.RELEASE_KEY_ALIAS }}
-          keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}
+          # Android Release Signing Configuration
+          RELEASE_KEYSTORE_BASE64=${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}
           EOF
+
+          echo "✅ Keystore configuration created"
 
       - name: 🔨 Build Release APK
         if: steps.check-existing.outputs.skip-build == 'false'
@@ -343,8 +343,8 @@ jobs:
         if: always()
         run: |
           # Remove sensitive files
-          rm -f android/app/release-key.jks
           rm -f android/keystore.properties
+          rm -f android/temp-keystore.jks
           echo "🧹 Cleanup completed"
 
       - name: 📱 Post-Release Summary

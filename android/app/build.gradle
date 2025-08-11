@@ -24,10 +24,20 @@ android {
    signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
+                // Decode base64 keystore and create temporary file
+                def keystoreBase64 = keystoreProperties['RELEASE_KEYSTORE_BASE64']
+                if (keystoreBase64) {
+                    def keystoreBytes = Base64.getDecoder().decode(keystoreBase64)
+                    def keystoreFile = new File(project.rootDir, 'temp-keystore.jks')
+                    keystoreFile.withOutputStream { it.write(keystoreBytes) }
+                    storeFile keystoreFile
+                } else {
+                    // Fallback to file path if not base64
+                    storeFile file(keystoreProperties['RELEASE_KEYSTORE_PATH'])
+                }
+                storePassword keystoreProperties['RELEASE_STORE_PASSWORD']
+                keyAlias keystoreProperties['RELEASE_KEY_ALIAS']
+                keyPassword keystoreProperties['RELEASE_KEY_PASSWORD']
             }
         }
     }

@@ -123,9 +123,12 @@ For detailed Docker setup guide, see: **[DOCKER_BUILD.md](./DOCKER_BUILD.md)**
 
 **GitHub Actions Integration:**
 
-- Add `docker-release` label to PRs for automated Docker-based releases
+- Add `lite-docker-release` label for fast Docker builds (recommended)
+- Add `docker-release` label for full Docker builds (slower but complete)
 - Triggers on PR merge with containerized APK building
 - Creates GitHub releases with Docker-built APKs
+
+**Docker Strategies:** See **[DOCKER_STRATEGIES.md](./DOCKER_STRATEGIES.md)** for detailed comparison of build approaches.
 
 ## 📋 Features
 

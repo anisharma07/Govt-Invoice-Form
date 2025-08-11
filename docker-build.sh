@@ -42,6 +42,7 @@ show_usage() {
     echo "  web-dev         Start web development server"
     echo "  clean           Clean Docker images and containers"
     echo "  setup-keystore  Setup keystore for release builds"
+    echo "  check-image     Check if Docker image exists"
     echo "  help            Show this help message"
     echo ""
     echo "Examples:"
@@ -49,6 +50,7 @@ show_usage() {
     echo "  $0 build-apk                      # Build release APK"
     echo "  $0 dev                            # Start development environment"
     echo "  $0 web-dev                        # Start web development server"
+    echo "  $0 check-image                    # Check if image exists"
     echo ""
 }
 
@@ -185,6 +187,30 @@ start_web_dev() {
     fi
 }
 
+# Function to check if Docker image exists
+check_image() {
+    print_info "Checking for Docker image..."
+    
+    if docker images govt-invoice-android:latest | grep -q govt-invoice-android; then
+        print_success "Docker image exists!"
+        docker images govt-invoice-android:latest
+        
+        # Show image details
+        IMAGE_SIZE=$(docker images govt-invoice-android:latest --format "table {{.Size}}" | tail -n +2)
+        IMAGE_CREATED=$(docker images govt-invoice-android:latest --format "table {{.CreatedAt}}" | tail -n +2)
+        
+        echo "📊 Image Size: $IMAGE_SIZE"
+        echo "📅 Created: $IMAGE_CREATED"
+        
+        print_success "Ready for APK building! Use: $0 build-apk"
+    else
+        print_warning "Docker image not found!"
+        echo "🔨 Build it with: $0 build-image"
+        echo "⏱️  First build takes ~15-20 minutes"
+        echo "🚀 Subsequent builds are much faster"
+    fi
+}
+
 # Function to clean Docker resources
 clean_docker() {
     print_info "Cleaning Docker resources..."
@@ -222,6 +248,9 @@ main() {
             ;;
         "web-dev")
             start_web_dev
+            ;;
+        "check-image")
+            check_image
             ;;
         "clean")
             clean_docker

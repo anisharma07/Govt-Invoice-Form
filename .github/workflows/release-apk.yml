@@ -159,18 +159,7 @@ jobs:
             npm install
           fi
 
-          # Verify React Native plugin is installed
-          echo "Checking for React Native Gradle plugin..."
-          if [ -d "node_modules/@react-native/gradle-plugin" ]; then
-            echo "✅ React Native Gradle plugin found"
-            ls -la node_modules/@react-native/gradle-plugin
-          else
-            echo "❌ React Native Gradle plugin NOT found"
-            echo "Available @react-native packages:"
-            ls -la node_modules/@react-native/ || echo "No @react-native directory found"
-          fi
-
-          npm list @react-native/gradle-plugin || echo "Package not found in npm list"
+          echo "✅ Dependencies installed successfully"
 
       - name: �🔍 Get Current Version
         id: current-version
@@ -251,47 +240,19 @@ jobs:
           keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}
           EOF
 
-      - name: � Generate React Native Codegen
-        if: steps.check-existing.outputs.skip-build == 'false'
-        run: |
-          echo "🔧 Generating React Native Codegen artifacts..."
-
-          # Generate codegen for React Native libraries
-          cd android
-          chmod +x gradlew
-
-          # Clean first to ensure fresh codegen
-          ./gradlew clean
-
-          # Generate codegen artifacts for all autolinked libraries
-          echo "Generating codegen artifacts from schema..."
-          ./gradlew generateCodegenArtifactsFromSchema --stacktrace --debug || {
-            echo "⚠️ Primary codegen generation failed, trying alternative approach..."
-            
-            # Try generating codegen for individual packages
-            echo "Generating codegen for individual packages..."
-            ./gradlew :generateCodegenSchemaFromJavaScript --stacktrace || echo "Schema generation completed with warnings"
-          }
-
-          # Verify codegen directories were created
-          echo "Verifying codegen artifacts..."
-          find ../node_modules -name "codegen" -type d | head -10
-
-          echo "✅ Codegen generation completed"
-
       - name: 🔨 Build Release APK
         if: steps.check-existing.outputs.skip-build == 'false'
         run: |
-          # Ensure node_modules exists and has React Native plugin
-          if [ ! -d "node_modules/@react-native/gradle-plugin" ]; then
-            echo "❌ React Native Gradle plugin not found in node_modules!"
-            echo "Available in node_modules/@react-native/:"
-            ls -la node_modules/@react-native/ || echo "Directory not found"
-            exit 1
-          fi
+          # Build web assets first
+          echo "🏗️ Building web assets..."
+          npm run build
 
-          # Build Android APK with codegen artifacts
-          echo "Building Android APK with codegen..."
+          # Sync with Capacitor
+          echo "🔄 Syncing with Capacitor..."
+          npx cap sync android
+
+          # Build Android APK
+          echo "🔨 Building Android APK..."
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease --stacktrace

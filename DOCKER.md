@@ -1,8 +1,36 @@
-# Docker Compose Setup for Ionic React Government Billing Solution
+# Docker Setup for Ionic React Government Invoice Form
 
-This project includes Docker Compose configuration to run the Ionic React frontend in both development and production environments.
+This project includes multiple Docker configurations for different purposes:
 
-## Prerequisites
+1. **Web Development & Production** (this file) - For web application deployment
+2. **Android APK Building** - For building Android APKs in Docker containers
+
+## 📱 Android APK Building with Docker
+
+For building Android APKs using Docker, see the comprehensive guide: **[DOCKER_BUILD.md](./DOCKER_BUILD.md)**
+
+Features include:
+
+- 🐳 Dockerized Android build environment
+- 🔄 Automated CI/CD with GitHub Actions
+- 🛠️ Local development tools
+- 📦 Reproducible builds
+
+**Quick Start for Android Builds:**
+
+```bash
+# Build Docker image for Android
+./docker-build.sh build-image
+
+# Build APK using Docker
+./docker-build.sh build-apk
+```
+
+## 🌐 Web Development & Production
+
+This section covers Docker setup for web development and production environments.
+
+### Prerequisites
 
 - Docker
 - Docker Compose

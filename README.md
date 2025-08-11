@@ -88,6 +88,45 @@ npx cap open android
 npx cap open ios
 ```
 
+### 🐳 Docker Development
+
+For containerized development and Android APK building using Docker:
+
+```bash
+# Test Docker setup
+./test-docker-setup.sh
+
+# Build Android Docker image
+./docker-build.sh build-image
+
+# Setup keystore for release builds
+./docker-build.sh setup-keystore
+
+# Build APK using Docker
+./docker-build.sh build-apk
+
+# Start web development with Docker
+./docker-build.sh web-dev
+
+# Start Android development environment
+./docker-build.sh dev
+```
+
+**Benefits of Docker Setup:**
+
+- 🔄 **Reproducible Builds**: Same environment every time
+- 🐳 **Isolated Environment**: No host system conflicts
+- 🚀 **CI/CD Ready**: Automated releases with GitHub Actions
+- 📱 **Android APK Building**: Complete Android build environment
+
+For detailed Docker setup guide, see: **[DOCKER_BUILD.md](./DOCKER_BUILD.md)**
+
+**GitHub Actions Integration:**
+
+- Add `docker-release` label to PRs for automated Docker-based releases
+- Triggers on PR merge with containerized APK building
+- Creates GitHub releases with Docker-built APKs
+
 ## 📋 Features
 
 ### 🏠 Core Application Features
@@ -244,5 +283,7 @@ For support, email [anirudhcsharma@gmail.com] or create an issue in this reposit
 ---
 
 **Made with ❤️ for Government Agencies and Public Sector Organizations**
+
 # Govt-Invoice-Billing-Offline
+
 # Govt-Invoice-Form

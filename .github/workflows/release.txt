@@ -127,36 +127,36 @@ jobs:
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
+          node-version: "20"
+          cache: "npm"
 
       - name: 💾 Cache node_modules
         uses: actions/cache@v4
         with:
           path: |
             node_modules
-            ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/package.json') }}
+            ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-npm-
 
       - name: ☕ Setup Java JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: "zulu"
+          java-version: "17"
 
-      - name: � Install Dependencies
+      - name: 📦 Install Dependencies
         run: |
-          echo "Installing dependencies with Yarn..."
+          echo "Installing dependencies with npm..."
 
-          # Check if yarn.lock exists
-          if [ -f "yarn.lock" ]; then
-            echo "yarn.lock found, using frozen lockfile"
-            yarn install --frozen-lockfile
+          # Check if package-lock.json exists
+          if [ -f "package-lock.json" ]; then
+            echo "package-lock.json found, using clean install"
+            npm ci
           else
-            echo "No yarn.lock found, generating new one"
-            yarn install
+            echo "No package-lock.json found, generating new one"
+            npm install
           fi
 
           # Verify React Native plugin is installed
@@ -170,7 +170,7 @@ jobs:
             ls -la node_modules/@react-native/ || echo "No @react-native directory found"
           fi
 
-          yarn list --pattern "@react-native/gradle-plugin" # List specific package
+          npm list @react-native/gradle-plugin || echo "Package not found in npm list"
 
       - name: �🔍 Get Current Version
         id: current-version
@@ -217,7 +217,7 @@ jobs:
           NEW_VERSION="${{ steps.new-version.outputs.new }}"
 
           # Update package.json
-          yarn version --new-version $NEW_VERSION --no-git-tag-version
+          npm version $NEW_VERSION --no-git-tag-version
 
           # Update Android versionName and versionCode
           VERSION_CODE=$(grep "versionCode" android/app/build.gradle | grep -o '[0-9]\+')

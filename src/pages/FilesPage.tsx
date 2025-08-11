@@ -44,7 +44,7 @@ const FilesPage: React.FC = () => {
 
         // Decode the stored content
         const storedContent = decodeURIComponent(storedDefaultFile.content);
-        const msc = DATA["home"][device]["msc"];
+        const msc = DATA["home"]["App"]["msc"];
 
         const hasUnsavedChanges = storedContent !== JSON.stringify(msc);
 
@@ -70,7 +70,7 @@ const FilesPage: React.FC = () => {
 
         // Decode the stored content
         const storedContent = decodeURIComponent(storedDefaultFile.content);
-        const msc = DATA["home"][device]["msc"];
+        const msc = DATA["home"]["App"]["msc"];
 
         const hasUnsavedChanges = storedContent !== JSON.stringify(msc);
 
@@ -96,7 +96,7 @@ const FilesPage: React.FC = () => {
       // Set selected file to "default"
       updateSelectedFile("default");
 
-      const msc = DATA["home"][device]["msc"];
+      const msc = DATA["home"]["App"]["msc"];
 
       // Load the template data into the spreadsheet
       AppGeneral.viewFile("default", JSON.stringify(msc));

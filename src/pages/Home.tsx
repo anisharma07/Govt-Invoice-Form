@@ -20,6 +20,8 @@ import {
   IonCardContent,
   IonSegment,
   IonSegmentButton,
+  IonFab,
+  IonFabButton,
   isPlatform,
 } from "@ionic/react";
 import { APP_NAME, DATA } from "../app-data";
@@ -40,6 +42,7 @@ import {
   cloudDownloadOutline,
   wifiOutline,
   downloadOutline,
+  createOutline,
 } from "ionicons/icons";
 import "./Home.css";
 import FileOptions from "../components/FileMenu/FileOptions";
@@ -48,6 +51,7 @@ import PWAInstallPrompt from "../components/PWAInstallPrompt";
 import { usePWA } from "../hooks/usePWA";
 import { useTheme } from "../contexts/ThemeContext";
 import { useInvoice } from "../contexts/InvoiceContext";
+import InvoiceForm from "../components/InvoiceForm";
 // import WalletConnection from "../components/wallet/WalletConnection";
 import {
   isDefaultFileEmpty,
@@ -86,6 +90,9 @@ const Home: React.FC = () => {
 
   // Actions popover state
   const [showActionsPopover, setShowActionsPopover] = useState(false);
+
+  // Invoice form state
+  const [showInvoiceForm, setShowInvoiceForm] = useState(false);
 
   // Available colors for sheet themes
   const availableColors = [
@@ -224,7 +231,7 @@ const Home: React.FC = () => {
           console.log("Loaded existing default file from local storage");
         } else {
           // If no default file exists, initialize with template data and save it
-          const data = DATA["home"][device]["msc"];
+          const data = DATA["home"]["App"]["msc"];
           AppGeneral.initializeApp(JSON.stringify(data));
 
           // Save the initial template as the default file
@@ -245,7 +252,7 @@ const Home: React.FC = () => {
         }
 
         // Fallback to template initialization
-        const data = DATA["home"][device]["msc"];
+        const data = DATA["home"]["App"]["msc"];
         AppGeneral.initializeApp(JSON.stringify(data));
         AppGeneral.changeSheetColor("#000000");
       }
@@ -400,7 +407,7 @@ const Home: React.FC = () => {
     }
   }, [isDarkMode, activeFontColor]);
 
-  const footers = DATA["home"][device]["footers"];
+  const footers = DATA["home"]["App"]["footers"];
   const footersList = footers.map((footerArray) => {
     const isActive = footerArray.index === billType;
 
@@ -768,6 +775,21 @@ const Home: React.FC = () => {
             </div>
           </IonContent>
         </IonModal>
+
+        <InvoiceForm
+          isOpen={showInvoiceForm}
+          onClose={() => setShowInvoiceForm(false)}
+        />
+
+        {/* Floating Action Button for Invoice Edit */}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton
+            onClick={() => setShowInvoiceForm(true)}
+            color="primary"
+          >
+            <IonIcon icon={createOutline} />
+          </IonFabButton>
+        </IonFab>
 
         <Menu showM={showMenu} setM={() => setShowMenu(false)} />
       </IonContent>

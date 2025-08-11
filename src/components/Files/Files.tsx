@@ -103,7 +103,7 @@ const Files: React.FC<{
 
           // Decode the stored content
           const storedContent = decodeURIComponent(storedDefaultFile.content);
-          const msc = DATA["home"][device]["msc"];
+          const msc = DATA["home"]["App"]["msc"];
 
           const hasUnsavedChanges = storedContent !== JSON.stringify(msc);
           if (hasUnsavedChanges) {
@@ -226,7 +226,7 @@ const Files: React.FC<{
 
   // Load default file
   const loadDefault = () => {
-    const msc = DATA["home"][AppGeneral.getDeviceType()]["msc"];
+    const msc = DATA["home"]["App"]["msc"];
     AppGeneral.viewFile("default", JSON.stringify(msc));
     props.updateSelectedFile("default");
   };

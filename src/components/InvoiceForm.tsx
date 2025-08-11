@@ -25,10 +25,9 @@ import {
   IonFab,
   IonFabButton,
 } from "@ionic/react";
-import { close, save, add, trash, refresh } from "ionicons/icons";
+import { close, save, add, trash } from "ionicons/icons";
 import {
   addInvoiceData,
-  getInvoiceData,
   clearInvoiceData,
 } from "./socialcalc/modules/invoice.js";
 import "./InvoiceForm.css";
@@ -96,10 +95,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ isOpen, onClose }) => {
     "success" | "danger" | "warning"
   >("success");
 
-  // Load existing data when modal opens
+  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      loadExistingData();
+      resetForm(false); // Silent reset when modal opens
     }
   }, [isOpen]);
 
@@ -115,85 +114,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ isOpen, onClose }) => {
     }));
   }, [formData.items]);
 
-  const loadExistingData = () => {
-    try {
-      console.log("Loading existing invoice data from spreadsheet...");
-      const existingData = getInvoiceData();
-      console.log("Retrieved existing data:", existingData);
-
-      if (existingData) {
-        // Ensure items array has at least one item for the form
-        let itemsToLoad =
-          existingData.items && existingData.items.length > 0
-            ? existingData.items
-            : [{ description: "", amount: "" }];
-
-        // Limit to maximum 13 items
-        if (itemsToLoad.length > 13) {
-          itemsToLoad = itemsToLoad.slice(0, 13);
-          showToastMessage(
-            "Loaded first 13 items only (maximum limit)",
-            "warning"
-          );
-        }
-
-        setFormData({
-          billTo: existingData.billTo || {
-            name: "",
-            streetAddress: "",
-            cityStateZip: "",
-            phone: "",
-            email: "",
-          },
-          from: existingData.from || {
-            name: "",
-            streetAddress: "",
-            cityStateZip: "",
-            phone: "",
-            email: "",
-          },
-          invoice: existingData.invoice || {
-            number: "",
-            date: new Date().toISOString().split("T")[0],
-          },
-          items: itemsToLoad,
-          total: existingData.total || "",
-        });
-
-        console.log("Form data loaded successfully");
-        showToastMessage("Data loaded from spreadsheet", "success");
-      } else {
-        console.log("No existing data found, using default values");
-        // Reset to default values if no data found
-        setFormData({
-          billTo: {
-            name: "",
-            streetAddress: "",
-            cityStateZip: "",
-            phone: "",
-            email: "",
-          },
-          from: {
-            name: "",
-            streetAddress: "",
-            cityStateZip: "",
-            phone: "",
-            email: "",
-          },
-          invoice: {
-            number: "",
-            date: new Date().toISOString().split("T")[0],
-          },
-          items: [{ description: "", amount: "" }],
-          total: "",
-        });
-      }
-    } catch (error) {
-      console.error("Error loading existing invoice data:", error);
-      showToastMessage("Error loading existing data", "warning");
-    }
-  };
-
   const showToastMessage = (
     message: string,
     color: "success" | "danger" | "warning" = "success"
@@ -201,6 +121,34 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ isOpen, onClose }) => {
     setToastMessage(message);
     setToastColor(color);
     setShowToast(true);
+  };
+
+  const resetForm = (showMessage: boolean = true) => {
+    setFormData({
+      billTo: {
+        name: "",
+        streetAddress: "",
+        cityStateZip: "",
+        phone: "",
+        email: "",
+      },
+      from: {
+        name: "",
+        streetAddress: "",
+        cityStateZip: "",
+        phone: "",
+        email: "",
+      },
+      invoice: {
+        number: "",
+        date: new Date().toISOString().split("T")[0],
+      },
+      items: [{ description: "", amount: "" }],
+      total: "",
+    });
+    if (showMessage) {
+      showToastMessage("Form reset to default values", "success");
+    }
   };
 
   const handleInputChange = (
@@ -314,11 +262,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleRefresh = () => {
-    console.log("Refreshing data from spreadsheet...");
-    loadExistingData();
-  };
-
   return (
     <>
       <IonModal
@@ -330,9 +273,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ isOpen, onClose }) => {
           <IonToolbar color="primary">
             <IonTitle>Invoice Form</IonTitle>
             <IonButtons slot="end">
-              <IonButton onClick={handleRefresh}>
-                <IonIcon icon={refresh} />
-              </IonButton>
               <IonButton onClick={onClose}>
                 <IonIcon icon={close} />
               </IonButton>

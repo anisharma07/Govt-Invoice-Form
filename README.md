@@ -40,6 +40,7 @@ src/
 
 ### 🏠 Core Application Features
 
+
 | **Feature** | **Description**        | **Status**                                                          |
 | ----------- | ---------------------- | ------------------------------------------------------------------- | ----------- |
 | **1**       | **Spreadsheet Editor** | Full-featured invoice creation with calculations and formatting     | ✅ Complete |
@@ -52,6 +53,7 @@ src/
 | **8**       | **Image Integration**  | Add logos, signatures, and images to invoices                       | ✅ Complete |
 | **9**       | **Camera Integration** | Take photos directly within the app for invoice documentation       | ✅ Complete |
 | **10**      | **Data Security**      | Client-side encryption and secure local storage                     | ✅ Complete |
+
 
 ## 1. Offline Features
 ```mermaid

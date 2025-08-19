@@ -2,12 +2,13 @@ apply plugin: 'com.android.application'
 
 import java.util.Base64
 
-// Load keystore properties
+// Load keystore properties if available
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
+
 android {
     namespace "io.ionic.starter"
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -24,32 +25,27 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-   signingConfigs {
-        release {
-            if (keystorePropertiesFile.exists()) {
-                // Decode base64 keystore and create temporary file
-                def keystoreBase64 = keystoreProperties['RELEASE_KEYSTORE_BASE64']
-                if (keystoreBase64) {
-                    def keystoreBytes = Base64.getDecoder().decode(keystoreBase64)
-                    def keystoreFile = new File(project.rootDir, 'temp-keystore.jks')
-                    keystoreFile.withOutputStream { it.write(keystoreBytes) }
-                    storeFile keystoreFile
-                } else {
-                    // Fallback to file path if not base64
-                    storeFile file(keystoreProperties['RELEASE_KEYSTORE_PATH'])
-                }
+    signingConfigs {
+       if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['RELEASE_STORE_FILE'])
                 storePassword keystoreProperties['RELEASE_STORE_PASSWORD']
                 keyAlias keystoreProperties['RELEASE_KEY_ALIAS']
                 keyPassword keystoreProperties['RELEASE_KEY_PASSWORD']
+            } else if (project.hasProperty('RELEASE_STORE_FILE')) {
+                storeFile file(RELEASE_STORE_FILE)
+                storePassword RELEASE_STORE_PASSWORD
+                keyAlias RELEASE_KEY_ALIAS
+                keyPassword RELEASE_KEY_PASSWORD
             }
         }
-    }
+
+
      buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             // Add signing config to release build
-            signingConfig signingConfigs.release
+             signingConfig signingConfigs.release
         }
     }
 }

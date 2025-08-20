@@ -43,6 +43,7 @@ import {
   checkmark,
   logoBuffer,
   pencilOutline,
+  colorPaletteOutline,
 } from "ionicons/icons";
 import * as AppGeneral from "../socialcalc/index.js";
 import { File } from "../Storage/LocalStorage.js";
@@ -59,11 +60,15 @@ import {
 interface FileOptionsProps {
   showActionsPopover: boolean;
   setShowActionsPopover: (show: boolean) => void;
+  showColorModal: boolean;
+  setShowColorPicker: (show: boolean) => void;
 }
 
 const FileOptions: React.FC<FileOptionsProps> = ({
   showActionsPopover,
   setShowActionsPopover,
+  showColorModal,
+  setShowColorPicker,
 }) => {
   const { isDarkMode } = useTheme();
   const [showToast, setShowToast] = useState(false);
@@ -151,12 +156,10 @@ const FileOptions: React.FC<FileOptionsProps> = ({
 
   const handleUndo = () => {
     AppGeneral.undo();
-    setShowActionsPopover(false);
   };
 
   const handleRedo = () => {
     AppGeneral.redo();
-    setShowActionsPopover(false);
   };
 
   const _validateName = (filename: string) => {
@@ -355,79 +358,10 @@ const FileOptions: React.FC<FileOptionsProps> = ({
     }
   };
 
-  const handleAddImage = () => {
-    setShowActionsPopover(false);
-    fileInputRef.current?.click();
-  };
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        if (imageUrl) {
-          // Get current selected cell
-          const currentCell = getCurrentSelectedCell();
-          if (currentCell) {
-            AppGeneral.addLogo(currentCell, imageUrl);
-            setToastMessage("Image added successfully!");
-            setShowToast(true);
-          } else {
-            setToastMessage("Please select a cell first");
-            setShowToast(true);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const getCurrentSelectedCell = (): string | null => {
     // This would typically get the currently selected cell from the spreadsheet
     // For now, return a default cell
     return "A1";
-  };
-
-  const handleTakePhoto = async () => {
-    setShowActionsPopover(false);
-    try {
-      const image = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: true,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
-      });
-
-      if (image.dataUrl) {
-        const currentCell = getCurrentSelectedCell();
-        if (currentCell) {
-          AppGeneral.addLogo(currentCell, image.dataUrl);
-          setToastMessage("Photo added successfully!");
-          setShowToast(true);
-        } else {
-          setToastMessage("Please select a cell first");
-          setShowToast(true);
-        }
-      }
-    } catch (error) {
-      console.error("Error taking photo:", error);
-      setToastMessage("Failed to take photo");
-      setShowToast(true);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setShowActionsPopover(false);
-    const currentCell = getCurrentSelectedCell();
-    if (currentCell) {
-      AppGeneral.removeLogo(currentCell);
-      setToastMessage("Image removed successfully!");
-      setShowToast(true);
-    } else {
-      setToastMessage("Please select a cell with an image first");
-      setShowToast(true);
-    }
   };
 
   const handleRemoveLogo = () => {
@@ -504,14 +438,9 @@ const FileOptions: React.FC<FileOptionsProps> = ({
               <IonLabel>Redo</IonLabel>
             </IonItem>
 
-            <IonItem button onClick={handleAddImage}>
-              <IonIcon icon={imageOutline} slot="start" />
-              <IonLabel>Add Image</IonLabel>
-            </IonItem>
-
-            <IonItem button onClick={handleTakePhoto}>
-              <IonIcon icon={cameraOutline} slot="start" />
-              <IonLabel>Take Photo</IonLabel>
+            <IonItem button onClick={() => setShowColorPicker(true)}>
+              <IonIcon icon={colorPaletteOutline} slot="start" />
+              <IonLabel>Sheet Colors</IonLabel>
             </IonItem>
 
             <IonItem button onClick={handleAddLogo}>
@@ -533,23 +462,9 @@ const FileOptions: React.FC<FileOptionsProps> = ({
               <IonIcon icon={closeCircle} slot="start" />
               <IonLabel>Remove Signature</IonLabel>
             </IonItem>
-
-            <IonItem button onClick={handleRemoveImage}>
-              <IonIcon icon={trashOutline} slot="start" />
-              <IonLabel>Remove Image</IonLabel>
-            </IonItem>
           </IonList>
         </IonContent>
       </IonPopover>
-
-      {/* Hidden file input for image upload */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        style={{ display: "none" }}
-        onChange={handleImageUpload}
-      />
 
       {/* Unsaved Changes Confirmation Alert */}
       <IonAlert

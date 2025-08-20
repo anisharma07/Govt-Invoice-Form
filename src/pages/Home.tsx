@@ -34,7 +34,6 @@ import {
   pencil,
   saveSharp,
   syncOutline,
-  colorPaletteOutline,
   closeOutline,
   textOutline,
   ellipsisVertical,
@@ -43,6 +42,7 @@ import {
   wifiOutline,
   downloadOutline,
   createOutline,
+  refreshOutline,
 } from "ionicons/icons";
 import "./Home.css";
 import FileOptions from "../components/FileMenu/FileOptions";
@@ -93,6 +93,10 @@ const Home: React.FC = () => {
 
   // Invoice form state
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
+
+  // Error state for initialization failures
+  const [initError, setInitError] = useState(false);
+  const [fileIsEmpty, setFileIsEmpty] = useState(false);
 
   // Available colors for sheet themes
   const availableColors = [
@@ -184,6 +188,44 @@ const Home: React.FC = () => {
     setShowColorModal(true);
   };
 
+  const handleRefreshFile = async () => {
+    try {
+      setInitError(false);
+      setFileIsEmpty(false);
+
+      // Clear the existing content
+      const container = document.getElementById("container");
+      if (container) {
+        const workbookControl = document.getElementById("workbookControl");
+        const tableeditor = document.getElementById("tableeditor");
+        const msg = document.getElementById("msg");
+
+        if (workbookControl) workbookControl.innerHTML = "";
+        if (tableeditor) tableeditor.innerHTML = "";
+        if (msg) msg.innerHTML = "";
+      }
+
+      // Re-initialize with template data
+      const data = DATA["home"]["App"]["msc"];
+      AppGeneral.initializeApp(JSON.stringify(data));
+
+      // Save the refreshed template as the default file
+      const initialContent = encodeURIComponent(JSON.stringify(data));
+      const now = new Date().toISOString();
+      const file = new File(now, now, initialContent, "default", billType);
+      await store._saveFile(file);
+
+      setToastMessage("File refreshed successfully!");
+      setToastColor("success");
+      setShowToast(true);
+    } catch (error) {
+      console.error("Error refreshing file:", error);
+      setToastMessage("Failed to refresh file. Please try again.");
+      setToastColor("danger");
+      setShowToast(true);
+    }
+  };
+
   const executeSaveAsWithFilename = async (filename: string) => {
     updateSelectedFile(filename);
 
@@ -221,14 +263,26 @@ const Home: React.FC = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        setInitError(false);
+        setFileIsEmpty(false);
+
         // First try to load the default file from local storage
         const defaultExists = await store._checkKey("default");
         if (defaultExists) {
           const defaultFile = await store._getFile("default");
           const decodedContent = decodeURIComponent(defaultFile.content);
-          AppGeneral.viewFile("default", decodedContent);
-          updateBillType(defaultFile.billType);
-          console.log("Loaded existing default file from local storage");
+
+          // Check if the file is empty using the helper function
+          const isEmpty = isDefaultFileEmpty(decodedContent);
+
+          if (isEmpty) {
+            setFileIsEmpty(true);
+            console.log("Default file is empty, showing refresh option");
+          } else {
+            AppGeneral.viewFile("default", decodedContent);
+            updateBillType(defaultFile.billType);
+            console.log("Loaded existing default file from local storage");
+          }
         } else {
           // If no default file exists, initialize with template data and save it
           const data = DATA["home"]["App"]["msc"];
@@ -244,6 +298,36 @@ const Home: React.FC = () => {
       } catch (error) {
         console.error("Error initializing app:", error);
 
+        // Check if this is the specific workbook error and if file is empty
+        const isWorkbookError =
+          error.message &&
+          error.message.includes(
+            "Cannot read properties of null (reading 'workbook')"
+          );
+
+        if (isWorkbookError) {
+          try {
+            // Check if the current file is empty
+            const defaultExists = await store._checkKey("default");
+            if (defaultExists) {
+              const defaultFile = await store._getFile("default");
+              const decodedContent = decodeURIComponent(defaultFile.content);
+              const isEmpty = isDefaultFileEmpty(decodedContent);
+
+              if (isEmpty) {
+                setInitError(true);
+                setFileIsEmpty(true);
+                console.log(
+                  "Workbook error with empty file, showing refresh button"
+                );
+                return; // Don't proceed with fallback initialization
+              }
+            }
+          } catch (checkError) {
+            console.error("Error checking file emptiness:", checkError);
+          }
+        }
+
         // Check if the error is due to storage quota exceeded
         if (isQuotaExceededError(error)) {
           setToastMessage(getQuotaExceededMessage("initializing the app"));
@@ -251,10 +335,14 @@ const Home: React.FC = () => {
           setShowToast(true);
         }
 
-        // Fallback to template initialization
-        const data = DATA["home"]["App"]["msc"];
-        AppGeneral.initializeApp(JSON.stringify(data));
-        AppGeneral.changeSheetColor("#000000");
+        // Fallback to template initialization for non-workbook errors
+        if (!isWorkbookError) {
+          const data = DATA["home"]["App"]["msc"];
+          AppGeneral.initializeApp(JSON.stringify(data));
+          AppGeneral.changeSheetColor("#000000");
+        } else {
+          setInitError(true);
+        }
       }
       // Alternative smooth scrolling implementation
       setTimeout(() => {
@@ -523,12 +611,6 @@ const Home: React.FC = () => {
               title="Format Current Cell"
             />
             <IonIcon
-              icon={colorPaletteOutline}
-              size="large"
-              onClick={() => openColorModal("background")}
-              style={{ cursor: "pointer", marginRight: "12px" }}
-            />
-            <IonIcon
               icon={shareSharp}
               size="large"
               onClick={(e) => {
@@ -564,9 +646,60 @@ const Home: React.FC = () => {
 
       <IonContent fullscreen>
         <div id="container">
-          <div id="workbookControl"></div>
-          <div id="tableeditor"></div>
-          <div id="msg"></div>
+          {initError && fileIsEmpty ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "400px",
+                padding: "20px",
+                textAlign: "center",
+              }}
+            >
+              <IonIcon
+                icon={refreshOutline}
+                style={{
+                  fontSize: "64px",
+                  color: "var(--ion-color-medium)",
+                  marginBottom: "20px",
+                }}
+              />
+              <h3
+                style={{
+                  color: "var(--ion-color-medium)",
+                  marginBottom: "10px",
+                }}
+              >
+                Spreadsheet Failed to Load
+              </h3>
+              <p
+                style={{
+                  color: "var(--ion-color-medium)",
+                  marginBottom: "20px",
+                }}
+              >
+                The file appears to be empty or corrupted. Click refresh to
+                reload with a fresh template.
+              </p>
+              <IonButton
+                onClick={handleRefreshFile}
+                color="primary"
+                size="default"
+                style={{ minWidth: "150px" }}
+              >
+                <IonIcon icon={refreshOutline} slot="start" />
+                Refresh File
+              </IonButton>
+            </div>
+          ) : (
+            <>
+              <div id="workbookControl"></div>
+              <div id="tableeditor"></div>
+              <div id="msg"></div>
+            </>
+          )}
         </div>
 
         {/* Toast for save notifications */}
@@ -635,6 +768,8 @@ const Home: React.FC = () => {
         <FileOptions
           showActionsPopover={showActionsPopover}
           setShowActionsPopover={setShowActionsPopover}
+          showColorModal={showColorModal}
+          setShowColorPicker={setShowColorModal}
         />
 
         {/* Color Picker Modal */}

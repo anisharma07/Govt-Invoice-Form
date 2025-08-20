@@ -20,6 +20,7 @@ import { InvoiceProvider } from "./contexts/InvoiceContext";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import OfflineIndicator from "./components/OfflineIndicator";
 import { usePWA } from "./hooks/usePWA";
+import { isNewUser } from "./utils/helper";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -46,6 +47,7 @@ setupIonicReact();
 const AppContent: React.FC = () => {
   const { isDarkMode } = useTheme();
   const { isOnline } = usePWA();
+  const showLandingPage = isNewUser();
 
   return (
     <IonApp className={isDarkMode ? "dark-theme" : "light-theme"}>
@@ -53,7 +55,11 @@ const AppContent: React.FC = () => {
         <IonReactRouter>
           <IonRouterOutlet>
             <Route exact path="/">
-              <LandingPage />
+              {showLandingPage ? (
+                <LandingPage />
+              ) : (
+                <Redirect to="/app/editor" />
+              )}
             </Route>
             <Route path="/app">
               <IonTabs>

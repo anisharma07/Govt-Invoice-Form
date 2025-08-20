@@ -65,6 +65,7 @@ import PWAInstallPrompt from "../components/PWAInstallPrompt";
 import PWADemo from "../components/PWADemo";
 // import { usePushNotifications } from "../utils/pushNotifications";
 import { usePWA } from "../hooks/usePWA";
+import { resetUserOnboarding } from "../utils/helper";
 import "./SettingsPage.css";
 // import {
 //   cloudService,
@@ -81,6 +82,7 @@ const SettingsPage: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showResetToast, setShowResetToast] = useState(false);
 
   // PWA features
   // Push notifications disabled in local-only mode
@@ -839,6 +841,11 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleResetOnboarding = () => {
+    resetUserOnboarding();
+    setShowResetToast(true);
+  };
+
   React.useEffect(() => {
     // Push notifications disabled in local-only mode
     // getPermissionState().then((state) => {
@@ -1378,6 +1385,13 @@ const SettingsPage: React.FC = () => {
                       onIonChange={(e) => toggleDarkMode()}
                       slot="end"
                     />
+                  </IonItem>
+                  <IonItem button onClick={handleResetOnboarding}>
+                    <IonIcon icon={informationCircle} slot="start" />
+                    <IonLabel>
+                      <h3>Reset Onboarding</h3>
+                      <p>Show landing page on next visit</p>
+                    </IonLabel>
                   </IonItem>
                 </IonList>
               </IonCardContent>
@@ -2193,6 +2207,16 @@ const SettingsPage: React.FC = () => {
             ? "warning"
             : "danger"
         }
+      />
+
+      {/* Toast for reset onboarding confirmation */}
+      <IonToast
+        isOpen={showResetToast}
+        onDidDismiss={() => setShowResetToast(false)}
+        message="Onboarding reset! Landing page will show on next visit."
+        duration={3000}
+        position="bottom"
+        color="success"
       />
     </IonPage>
   );

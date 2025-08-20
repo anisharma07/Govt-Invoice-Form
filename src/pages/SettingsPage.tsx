@@ -880,6 +880,135 @@ const SettingsPage: React.FC = () => {
         }
       >
         <div className="settings-container">
+          <div
+            className={`signature-section ${isDarkMode ? "" : "light-mode"}`}
+          >
+            {/* Settings Card */}
+            <IonCard
+              className={
+                isDarkMode ? "settings-card-dark" : "settings-card-light"
+              }
+            >
+              <IonCardHeader
+                className={
+                  isDarkMode
+                    ? "settings-card-header-dark"
+                    : "settings-card-header-light"
+                }
+              >
+                <IonCardTitle
+                  className={
+                    isDarkMode
+                      ? "settings-card-title-dark"
+                      : "settings-card-title-light"
+                  }
+                >
+                  <IonIcon
+                    icon={settings}
+                    style={{ marginRight: "8px", fontSize: "1.5em" }}
+                  />
+                  Preferences
+                </IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <IonList>
+                  <IonItem>
+                    <IonIcon icon={isDarkMode ? moon : sunny} slot="start" />
+                    <IonLabel>Dark Mode</IonLabel>
+                    <IonToggle
+                      checked={isDarkMode}
+                      onIonChange={(e) => toggleDarkMode()}
+                      slot="end"
+                    />
+                  </IonItem>
+                  <IonItem button onClick={handleResetOnboarding}>
+                    <IonIcon icon={informationCircle} slot="start" />
+                    <IonLabel>
+                      <h3>Reset Onboarding</h3>
+                      <p>Show landing page on next visit</p>
+                    </IonLabel>
+                  </IonItem>
+                </IonList>
+              </IonCardContent>
+            </IonCard>
+          </div>
+
+          {/* PWA Status Card */}
+          <div className="signature-section" style={{ marginBottom: "20px" }}>
+            <IonCard
+              className={
+                isDarkMode ? "settings-card-dark" : "settings-card-light"
+              }
+            >
+              <IonCardHeader
+                className={
+                  isDarkMode
+                    ? "settings-card-header-dark"
+                    : "settings-card-header-light"
+                }
+              >
+                <IonCardTitle
+                  className={
+                    isDarkMode
+                      ? "settings-card-title-dark"
+                      : "settings-card-title-light"
+                  }
+                >
+                  <IonIcon
+                    icon={wifiOutline}
+                    style={{ marginRight: "8px", fontSize: "1.5em" }}
+                  />
+                  App Status
+                </IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <IonList>
+                  <IonItem>
+                    <IonIcon
+                      icon={isOnline ? wifiOutline : cloudOfflineOutline}
+                      slot="start"
+                      style={{
+                        color: isOnline ? "#28ba62" : "#f04141",
+                      }}
+                    />
+                    <IonLabel>
+                      <h3>Connection Status</h3>
+                      <p>{isOnline ? "Online" : "Offline"}</p>
+                    </IonLabel>
+                  </IonItem>
+
+                  {isInstallable && !isInstalled && (
+                    <IonItem button onClick={installApp}>
+                      <IonIcon
+                        icon={downloadOutline}
+                        slot="start"
+                        style={{ color: "#3880ff" }}
+                      />
+                      <IonLabel>
+                        <h3>Install App</h3>
+                        <p>Install as a Progressive Web App</p>
+                      </IonLabel>
+                    </IonItem>
+                  )}
+
+                  {isInstalled && (
+                    <IonItem>
+                      <IonIcon
+                        icon={checkmark}
+                        slot="start"
+                        style={{ color: "#28ba62" }}
+                      />
+                      <IonLabel>
+                        <h3>App Installed</h3>
+                        <p>Running as installed PWA</p>
+                      </IonLabel>
+                    </IonItem>
+                  )}
+                </IonList>
+              </IonCardContent>
+            </IonCard>
+          </div>
+
           {/* Signature Section */}
           <div className="signature-section" style={{ marginBottom: "20px" }}>
             <IonCard
@@ -1328,215 +1457,6 @@ const SettingsPage: React.FC = () => {
                 </div>
               </IonCardContent>
             </IonCard>
-          </div>
-
-          <IonHeader collapse="condense">
-            <IonToolbar>
-              <IonTitle size="large">Menu & Settings</IonTitle>
-              <IonButtons slot="end">
-                <IonButton
-                  fill="clear"
-                  onClick={toggleDarkMode}
-                  style={{ fontSize: "1.5em" }}
-                >
-                  <IonIcon icon={isDarkMode ? sunny : moon} />
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-
-          <div
-            className={`menu-page-container ${isDarkMode ? "" : "light-mode"}`}
-          >
-            {/* Settings Card */}
-            <IonCard
-              className={
-                isDarkMode ? "settings-card-dark" : "settings-card-light"
-              }
-            >
-              <IonCardHeader
-                className={
-                  isDarkMode
-                    ? "settings-card-header-dark"
-                    : "settings-card-header-light"
-                }
-              >
-                <IonCardTitle
-                  className={
-                    isDarkMode
-                      ? "settings-card-title-dark"
-                      : "settings-card-title-light"
-                  }
-                >
-                  <IonIcon
-                    icon={settings}
-                    style={{ marginRight: "8px", fontSize: "1.5em" }}
-                  />
-                  Preferences
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList>
-                  <IonItem>
-                    <IonIcon icon={isDarkMode ? moon : sunny} slot="start" />
-                    <IonLabel>Dark Mode</IonLabel>
-                    <IonToggle
-                      checked={isDarkMode}
-                      onIonChange={(e) => toggleDarkMode()}
-                      slot="end"
-                    />
-                  </IonItem>
-                  <IonItem button onClick={handleResetOnboarding}>
-                    <IonIcon icon={informationCircle} slot="start" />
-                    <IonLabel>
-                      <h3>Reset Onboarding</h3>
-                      <p>Show landing page on next visit</p>
-                    </IonLabel>
-                  </IonItem>
-                </IonList>
-              </IonCardContent>
-            </IonCard>
-
-            {/* PWA Status Card */}
-            <IonCard
-              className={
-                isDarkMode ? "settings-card-dark" : "settings-card-light"
-              }
-            >
-              <IonCardHeader
-                className={
-                  isDarkMode
-                    ? "settings-card-header-dark"
-                    : "settings-card-header-light"
-                }
-              >
-                <IonCardTitle
-                  className={
-                    isDarkMode
-                      ? "settings-card-title-dark"
-                      : "settings-card-title-light"
-                  }
-                >
-                  <IonIcon
-                    icon={downloadOutline}
-                    style={{ marginRight: "8px", fontSize: "1.5em" }}
-                  />
-                  PWA Features
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList>
-                  <IonItem>
-                    <IonIcon
-                      icon={downloadOutline}
-                      slot="start"
-                      color={
-                        isInstallable && !isInstalled ? "success" : "medium"
-                      }
-                    />
-                    <IonLabel>
-                      <h2>App Installation</h2>
-                      <p>
-                        {isInstalled
-                          ? "✓ App is installed"
-                          : isInstallable
-                          ? "Ready to install - Click to add to home screen"
-                          : "Installation not available (may already be installed)"}
-                      </p>
-                    </IonLabel>
-                    {isInstallable && !isInstalled && (
-                      <IonButton
-                        fill="outline"
-                        size="small"
-                        onClick={async () => {
-                          const success = await installApp();
-                          if (success) {
-                            setToastMessage("App installed successfully!");
-                            setShowToast(true);
-                          }
-                        }}
-                        slot="end"
-                      >
-                        Install
-                      </IonButton>
-                    )}
-                  </IonItem>
-
-                  <IonItem>
-                    <IonIcon
-                      icon={isOnline ? wifiOutline : cloudOfflineOutline}
-                      slot="start"
-                      color={isOnline ? "success" : "warning"}
-                    />
-                    <IonLabel>
-                      <h2>Connection Status</h2>
-                      <p>
-                        {isOnline
-                          ? "✓ Online - All features available"
-                          : "⚠ Offline - Limited functionality"}
-                      </p>
-                    </IonLabel>
-                  </IonItem>
-
-                  <IonItem>
-                    <IonIcon
-                      icon={notifications}
-                      slot="start"
-                      color={
-                        notificationPermission === "granted"
-                          ? "success"
-                          : "medium"
-                      }
-                    />
-                    <IonLabel>
-                      <h2>Push Notifications</h2>
-                      <p>
-                        {notificationPermission === "granted"
-                          ? "✓ Enabled - You'll receive updates"
-                          : "Enable notifications for app updates"}
-                      </p>
-                    </IonLabel>
-                    {notificationPermission !== "granted" && (
-                      <IonButton
-                        fill="outline"
-                        size="small"
-                        onClick={handleNotificationPermission}
-                        slot="end"
-                      >
-                        Enable
-                      </IonButton>
-                    )}
-                  </IonItem>
-
-                  <IonItem>
-                    <IonIcon
-                      icon={cloudDoneOutline}
-                      slot="start"
-                      color="success"
-                    />
-                    <IonLabel>
-                      <h2>Offline Storage</h2>
-                      <p>✓ Your data is saved locally and syncs when online</p>
-                    </IonLabel>
-                  </IonItem>
-
-                  <IonItem>
-                    <IonIcon
-                      icon={refreshOutline}
-                      slot="start"
-                      color="success"
-                    />
-                    <IonLabel>
-                      <h2>Auto Updates</h2>
-                      <p>✓ App updates automatically in the background</p>
-                    </IonLabel>
-                  </IonItem>
-                </IonList>
-              </IonCardContent>
-            </IonCard>
-
-            {/* PWA Demo Component */}
-            <PWADemo />
           </div>
         </div>
 

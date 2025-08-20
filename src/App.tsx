@@ -63,17 +63,15 @@ const AppContent: React.FC = () => {
             </Route>
             <Route path="/app">
               <IonTabs>
+                {!isOnline && <OfflineIndicator />}
                 <IonRouterOutlet>
                   <Route exact path="/app/editor">
-                    {!isOnline && <OfflineIndicator />}
                     <Home />
                   </Route>
                   <Route exact path="/app/files">
-                    {!isOnline && <OfflineIndicator />}
                     <FilesPage />
                   </Route>
                   <Route exact path="/app/settings">
-                    {!isOnline && <OfflineIndicator />}
                     <SettingsPage />
                   </Route>
                   <Route exact path="/app">

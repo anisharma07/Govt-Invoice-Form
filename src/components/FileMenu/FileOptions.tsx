@@ -47,7 +47,7 @@ import {
 } from "ionicons/icons";
 import * as AppGeneral from "../socialcalc/index.js";
 import { File } from "../Storage/LocalStorage.js";
-import { DATA } from "../../app-data.js";
+import { DATA } from "../../templates.js";
 import { useInvoice } from "../../contexts/InvoiceContext.js";
 import { formatDateForFilename } from "../../utils/helper.js";
 import { useTheme } from "../../contexts/ThemeContext.js";
@@ -312,6 +312,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       setShowUnsavedChangesAlert(true);
     }
   };
+
   const createNewFile = async () => {
     try {
       // Reset to defaults first
@@ -345,6 +346,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       setShowToast(true);
     }
   };
+
   const handleDiscardAndCreateNew = async () => {
     try {
       // User confirmed to discard changes, proceed with creating new file

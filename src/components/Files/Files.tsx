@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Files.css";
 import * as AppGeneral from "../socialcalc/index.js";
-import { DATA } from "../../app-data.js";
+import { DATA } from "../../templates.js";
 import { File as LocalFile, Local } from "../Storage/LocalStorage";
 import {
   IonIcon,
@@ -27,6 +27,7 @@ import {
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
+  IonCardSubtitle,
   IonModal,
   IonFab,
   IonFabButton,
@@ -35,6 +36,10 @@ import {
   IonItemSliding,
   IonItemOptions,
   IonItemOption,
+  IonChip,
+  IonGrid,
+  IonRow,
+  IonCol,
 } from "@ionic/react";
 import {
   trash,
@@ -51,6 +56,9 @@ import {
   swapVertical,
   create,
   ellipsisHorizontal,
+  add,
+  layers,
+  copyOutline,
 } from "ionicons/icons";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useHistory } from "react-router-dom";
@@ -60,6 +68,8 @@ import {
   isQuotaExceededError,
   getQuotaExceededMessage,
 } from "../../utils/helper";
+import { TemplateManager } from "../../utils/templateManager";
+import { TemplateInitializer } from "../../utils/templateInitializer";
 
 const Files: React.FC<{
   store: Local;
@@ -67,7 +77,8 @@ const Files: React.FC<{
   updateSelectedFile: Function;
   updateBillType: Function;
 }> = (props) => {
-  const { selectedFile, updateSelectedFile } = useInvoice();
+  const { selectedFile, updateSelectedFile, activeTempId, updateActiveTempId } =
+    useInvoice();
   const { isDarkMode } = useTheme();
   const history = useHistory();
 
@@ -91,66 +102,32 @@ const Files: React.FC<{
 
   const [serverFilesLoading, setServerFilesLoading] = useState(false);
 
+  // Template selection states
+  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<
+    number | "all"
+  >("all");
+
   // Blockchain state removed - local-only mode
 
-  const handleSaveUnsavedChanges = async () => {
-    // Save Default File Changes if not already saved
-    if (selectedFile === "default" && props.file !== "default") {
-      try {
-        const defaultExists = await props.store._checkKey("default");
-        if (defaultExists) {
-          const storedDefaultFile = await props.store._getFile("default");
-
-          // Decode the stored content
-          const storedContent = decodeURIComponent(storedDefaultFile.content);
-          const msc = DATA["home"]["App"]["msc"];
-
-          const hasUnsavedChanges = storedContent !== JSON.stringify(msc);
-          if (hasUnsavedChanges) {
-            console.log("Default file has unsaved changes, saving...");
-            // Save the current spreadsheet content to the default file
-            const currentContent = AppGeneral.getSpreadsheetContent();
-            const now = new Date().toISOString();
-
-            const untitledFileName =
-              "Untitled-" + formatDateForFilename(new Date());
-            const updatedDefaultFile = new LocalFile(
-              now, // created
-              now, // modified
-              encodeURIComponent(currentContent), // encoded content
-              untitledFileName, // new name for the default file
-              storedDefaultFile.billType, // keep the same billType
-              false // isEncrypted = false for default files
-            );
-            await props.store._saveFile(updatedDefaultFile);
-
-            // Clear Default File...
-            const templateContent = encodeURIComponent(JSON.stringify(msc));
-            const newDefaultFile = new LocalFile(
-              now,
-              now,
-              templateContent,
-              "default",
-              1
-            );
-            await props.store._saveFile(newDefaultFile);
-            setToastMessage(`Changes Saved as ${untitledFileName}`);
-            setShowToast(true);
-          }
-        }
-      } catch (error) {
-        console.error("Error saving default file changes:", error);
-
-        // Check if the error is due to storage quota exceeded
-        if (isQuotaExceededError(error)) {
-          setToastMessage(getQuotaExceededMessage("saving changes"));
-        } else {
-          setToastMessage("Failed to save default file changes");
-        }
-        setShowToast(true);
-      }
-    }
+  // Template helper functions
+  const getAvailableTemplates = () => {
+    return TemplateInitializer.getAllTemplates();
   };
+
+  const getTemplateInfo = (templateId: number) => {
+    const template = TemplateInitializer.getTemplate(templateId);
+    return template ? template.template : `Template ${templateId}`;
+  };
+
+  const getFileTemplateInfo = (fileData: any) => {
+    return fileData.templateMetadata || null;
+  };
+
+  const handleSaveUnsavedChanges = async () => {
+    // No longer need to handle default file changes
+    // since we removed the default file concept
+  };
+  
   // Edit local file
   const editFile = async (key: string) => {
     try {
@@ -158,62 +135,11 @@ const Files: React.FC<{
 
       await handleSaveUnsavedChanges();
 
-      const data = await props.store._getFile(key);
-      console.log("File data retrieved:", {
-        name: data.name,
-        contentLength: data.content?.length,
-        billType: data.billType,
-        hasContent: !!data.content,
-      });
-
-      if (!data.content) {
-        setToastMessage("File content is empty or corrupted");
-        setShowToast(true);
-        return;
-      }
-      // console.log("billType:", data.billType);
-      // console.log("File CONTENT-------------->", data.content);
-      const decodedContent = decodeURIComponent(data.content);
-      // console.log("Decoded content:", decodedContent);
-      // console.log("Decoded content length:", decodedContent.length);
-      // console.log("Decoded content preview:", decodedContent.substring(0, 200));
-
-      // Ensure SocialCalc is properly initialized before loading the file
-      // First, try to get the current workbook control to see if it's initialized
-      try {
-        const currentControl = AppGeneral.getWorkbookInfo();
-        console.log("Current workbook info:", currentControl);
-
-        if (currentControl && currentControl.workbook) {
-          // SocialCalc is initialized, use viewFile
-          AppGeneral.viewFile(key, decodedContent);
-          console.log("File loaded successfully with viewFile");
-        } else {
-          // SocialCalc not initialized, initialize it first
-          console.log("SocialCalc not initialized, initializing...");
-          AppGeneral.initializeApp(decodedContent);
-          console.log("File loaded successfully with initializeApp");
-        }
-      } catch (error) {
-        console.error("Error checking SocialCalc state:", error);
-        // Fallback: try to initialize the app
-        try {
-          AppGeneral.initializeApp(decodedContent);
-          console.log("File loaded successfully with initializeApp (fallback)");
-        } catch (initError) {
-          console.error("initializeApp failed:", initError);
-          throw new Error(
-            "Failed to load file: SocialCalc initialization error"
-          );
-        }
-      }
-
-      props.updateSelectedFile(key);
-      props.updateBillType(data.billType);
-      history.push("/app/editor");
+      // Simply navigate to the editor - let Home.tsx handle file loading and SocialCalc initialization
+      history.push(`/app/editor/${encodeURIComponent(key)}`);
     } catch (error) {
       console.error("Error in editFile:", error);
-      setToastMessage("Failed to load file");
+      setToastMessage("Failed to navigate to editor");
       setShowToast(true);
     }
   };
@@ -222,13 +148,6 @@ const Files: React.FC<{
   const deleteFile = (key: string) => {
     setShowAlert1(true);
     setCurrentKey(key);
-  };
-
-  // Load default file
-  const loadDefault = () => {
-    const msc = DATA["home"]["App"]["msc"];
-    AppGeneral.viewFile("default", JSON.stringify(msc));
-    props.updateSelectedFile("default");
   };
 
   // Format date with validation
@@ -399,9 +318,9 @@ const Files: React.FC<{
   // Validation function (adapted from Menu.tsx)
   const _validateName = async (filename: string, excludeKey?: string) => {
     filename = filename.trim();
-    if (filename === "default" || filename === "Untitled") {
+    if (filename === "Untitled") {
       setToastMessage(
-        "Cannot update default or Untitled file! Use Save As Button to save."
+        "Cannot update Untitled file! Use Save As Button to save."
       );
       return false;
     } else if (filename === "" || !filename) {
@@ -511,7 +430,6 @@ const Files: React.FC<{
       const localFiles = await props.store._getAllFiles();
 
       const filesArray = Object.keys(localFiles)
-        .filter((key) => key !== "default") // Exclude the default file from the list
         .map((key) => {
           const fileData = localFiles[key];
 
@@ -538,18 +456,32 @@ const Files: React.FC<{
             dateCreated: createdDate,
             dateModified: modifiedDate,
             type: "local",
+            templateMetadata: fileData.templateMetadata || null,
           };
         });
-      const filteredFiles = filterFilesBySearch(filesArray, searchQuery);
+
+      // Filter by template if a specific template is selected
+      let filteredFiles = filesArray;
+      if (selectedTemplateFilter !== "all") {
+        filteredFiles = filesArray.filter(
+          (file) => file.templateMetadata?.templateId === selectedTemplateFilter
+        );
+      }
+
+      // Apply search filter
+      filteredFiles = filterFilesBySearch(filteredFiles, searchQuery);
+
       if (filteredFiles.length === 0) {
+        const emptyMessage = searchQuery.trim()
+          ? `No files found matching "${searchQuery}"`
+          : selectedTemplateFilter !== "all"
+          ? `No files found for ${getTemplateInfo(selectedTemplateFilter as number)}`
+          : "No local files found";
+
         content = (
           <IonList style={{ border: "none" }} lines="none">
             <IonItem style={{ "--border-width": "0px" }}>
-              <IonLabel>
-                {searchQuery.trim()
-                  ? `No files found matching "${searchQuery}"`
-                  : "No local files found"}
-              </IonLabel>
+              <IonLabel>{emptyMessage}</IonLabel>
             </IonItem>
           </IonList>
         );
@@ -581,6 +513,21 @@ const Files: React.FC<{
                         Local file • {getLocalFileDateInfo(file).label}:{" "}
                         {_formatDate(getLocalFileDateInfo(file).value)}
                       </p>
+                      {file.templateMetadata && (
+                        <div style={{ marginTop: "4px" }}>
+                          <IonChip color="primary" outline>
+                            <IonIcon icon={layers} />
+                            <IonLabel>{file.templateMetadata.template}</IonLabel>
+                          </IonChip>
+                          {file.templateMetadata.footers.length > 0 && (
+                            <IonChip color="secondary" outline>
+                              <IonLabel>
+                                {file.templateMetadata.footers.length} footer(s)
+                              </IonLabel>
+                            </IonChip>
+                          )}
+                        </div>
+                      )}
                     </IonLabel>
                     <div
                       slot="end"
@@ -643,7 +590,6 @@ const Files: React.FC<{
                   </IonItem>
                   {(files as any[]).map((file) => (
                     <IonItemGroup key={`local-${file.key}`}>
-                      {" "}
                       <IonItem
                         className="mobile-file-item"
                         onClick={() => editFile(file.key)}
@@ -663,6 +609,21 @@ const Files: React.FC<{
                             Local file • {getLocalFileDateInfo(file).label}:{" "}
                             {_formatDate(getLocalFileDateInfo(file).value)}
                           </p>
+                          {file.templateMetadata && (
+                            <div style={{ marginTop: "4px" }}>
+                              <IonChip color="primary" outline>
+                                <IonIcon icon={layers} />
+                                <IonLabel>{file.templateMetadata.template}</IonLabel>
+                              </IonChip>
+                              {file.templateMetadata.footers.length > 0 && (
+                                <IonChip color="secondary" outline>
+                                  <IonLabel>
+                                    {file.templateMetadata.footers.length} footer(s)
+                                  </IonLabel>
+                                </IonChip>
+                              )}
+                            </div>
+                          )}
                         </IonLabel>
                         <div
                           slot="end"
@@ -713,7 +674,7 @@ const Files: React.FC<{
   useEffect(() => {
     renderFileList();
     // eslint-disable-next-line
-  }, [props.file, fileSource, searchQuery, sortBy, serverFilesLoading]);
+  }, [props.file, fileSource, searchQuery, sortBy, serverFilesLoading, selectedTemplateFilter]);
 
   // Reset sort option when switching file sources to ensure compatibility
   useEffect(() => {
@@ -747,6 +708,7 @@ const Files: React.FC<{
                 alignItems: "center",
                 maxWidth: "800px",
                 margin: "0 auto",
+                flexWrap: "wrap",
               }}
             >
               <IonSearchbar
@@ -758,6 +720,41 @@ const Files: React.FC<{
                 debounce={300}
                 style={{ flex: "2", minWidth: "200px" }}
               />
+              
+              {/* Template Filter */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flex: "1",
+                  minWidth: "140px",
+                  maxWidth: "180px",
+                }}
+              >
+                <IonIcon
+                  icon={layers}
+                  style={{ marginRight: "4px", fontSize: "16px" }}
+                />
+                <IonSelect
+                  value={selectedTemplateFilter}
+                  placeholder="All Templates"
+                  onIonChange={(e) => setSelectedTemplateFilter(e.detail.value)}
+                  style={{
+                    flex: "1",
+                    "--placeholder-color": "var(--ion-color-medium)",
+                    "--color": "var(--ion-color-dark)",
+                  }}
+                  interface="popover"
+                >
+                  <IonSelectOption value="all">All Templates</IonSelectOption>
+                  {getAvailableTemplates().map((template) => (
+                    <IonSelectOption key={template.templateId} value={template.templateId}>
+                      {template.template}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              </div>
+
               <div
                 style={{
                   display: "flex",
@@ -828,7 +825,6 @@ const Files: React.FC<{
             handler: async () => {
               if (currentKey) {
                 await props.store._deleteFile(currentKey);
-                loadDefault();
                 setCurrentKey(null);
                 await renderFileList();
               }

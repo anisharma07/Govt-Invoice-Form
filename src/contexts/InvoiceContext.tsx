@@ -11,8 +11,10 @@ interface InvoiceContextType {
   selectedFile: string;
   billType: number;
   store: Local;
+  activeTempId: number;
   updateSelectedFile: (fileName: string) => void;
   updateBillType: (type: number) => void;
+  updateActiveTempId: (tempId: number) => void;
   resetToDefaults: () => void;
 }
 
@@ -35,6 +37,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
 }) => {
   const [selectedFile, setSelectedFile] = useState<string>("default");
   const [billType, setBillType] = useState<number>(1);
+  const [activeTempId, setActiveTempId] = useState<number>(1);
   const [store] = useState(() => new Local());
 
   // Load persisted state from localStorage on mount
@@ -42,6 +45,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
     try {
       const savedFile = localStorage.getItem("stark-invoice-selected-file");
       const savedBillType = localStorage.getItem("stark-invoice-bill-type");
+      const savedActiveTempId = localStorage.getItem("stark-invoice-active-temp-id");
 
       if (savedFile) {
         setSelectedFile(savedFile);
@@ -49,6 +53,10 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
 
       if (savedBillType) {
         setBillType(parseInt(savedBillType, 10));
+      }
+
+      if (savedActiveTempId) {
+        setActiveTempId(parseInt(savedActiveTempId, 10));
       }
     } catch (error) {
       console.warn("Failed to load invoice state from localStorage:", error);
@@ -72,6 +80,14 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
     }
   }, [billType]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("stark-invoice-active-temp-id", activeTempId.toString());
+    } catch (error) {
+      console.warn("Failed to save active temp id to localStorage:", error);
+    }
+  }, [activeTempId]);
+
   const updateSelectedFile = (fileName: string) => {
     setSelectedFile(fileName);
   };
@@ -80,17 +96,24 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
     setBillType(type);
   };
 
+  const updateActiveTempId = (tempId: number) => {
+    setActiveTempId(tempId);
+  };
+
   const resetToDefaults = () => {
     setSelectedFile("default");
     setBillType(1);
+    setActiveTempId(1);
   };
 
   const value: InvoiceContextType = {
     selectedFile,
     billType,
     store,
+    activeTempId,
     updateSelectedFile,
     updateBillType,
+    updateActiveTempId,
     resetToDefaults,
   };
 

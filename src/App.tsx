@@ -1,16 +1,10 @@
 import {
   IonApp,
   IonRouterOutlet,
-  IonTabBar,
-  IonTabButton,
-  IonTabs,
-  IonIcon,
-  IonLabel,
   setupIonicReact,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
 import { Route, Redirect } from "react-router-dom";
-import { documentText, folder, menu, settings, home } from "ionicons/icons";
 import Home from "./pages/Home";
 import FilesPage from "./pages/FilesPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -21,6 +15,8 @@ import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import OfflineIndicator from "./components/OfflineIndicator";
 import { usePWA } from "./hooks/usePWA";
 import { isNewUser } from "./utils/helper";
+import { TemplateInitializer } from "./utils/templateInitializer";
+import { useEffect } from "react";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -49,6 +45,22 @@ const AppContent: React.FC = () => {
   const { isOnline } = usePWA();
   const showLandingPage = isNewUser();
 
+  // Initialize multi-template architecture
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        const isInitialized = await TemplateInitializer.isInitialized();
+        if (!isInitialized) {
+          await TemplateInitializer.initializeApp();
+        }
+      } catch (error) {
+        console.error('Failed to initialize template system:', error);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
   return (
     <IonApp className={isDarkMode ? "dark-theme" : "light-theme"}>
       <InvoiceProvider>
@@ -58,44 +70,28 @@ const AppContent: React.FC = () => {
               {showLandingPage ? (
                 <LandingPage />
               ) : (
-                <Redirect to="/app/editor" />
+                <Redirect to="/app/files" />
               )}
             </Route>
             <Route path="/app">
-              <IonTabs>
-                {!isOnline && <OfflineIndicator />}
-                <IonRouterOutlet>
-                  <Route exact path="/app/editor">
-                    <Home />
-                  </Route>
-                  <Route exact path="/app/files">
-                    <FilesPage />
-                  </Route>
-                  <Route exact path="/app/settings">
-                    <SettingsPage />
-                  </Route>
-                  <Route exact path="/app">
-                    <Redirect to="/app/editor" />
-                  </Route>
-                </IonRouterOutlet>
-
-                <IonTabBar slot="bottom">
-                  <IonTabButton tab="editor" href="/app/editor">
-                    <IonIcon icon={documentText} />
-                    <IonLabel>Editor</IonLabel>
-                  </IonTabButton>
-
-                  <IonTabButton tab="files" href="/app/files">
-                    <IonIcon icon={folder} />
-                    <IonLabel>Files</IonLabel>
-                  </IonTabButton>
-
-                  <IonTabButton tab="settings" href="/app/settings">
-                    <IonIcon icon={settings} />
-                    <IonLabel>Settings</IonLabel>
-                  </IonTabButton>
-                </IonTabBar>
-              </IonTabs>
+              {!isOnline && <OfflineIndicator />}
+              <IonRouterOutlet>
+                <Route exact path="/app/editor/:fileName">
+                  <Home />
+                </Route>
+                <Route exact path="/app/editor">
+                  <Home />
+                </Route>
+                <Route exact path="/app/files">
+                  <FilesPage />
+                </Route>
+                <Route exact path="/app/settings">
+                  <SettingsPage />
+                </Route>
+                <Route exact path="/app">
+                  <Redirect to="/app/files" />
+                </Route>
+              </IonRouterOutlet>
             </Route>
           </IonRouterOutlet>
         </IonReactRouter>

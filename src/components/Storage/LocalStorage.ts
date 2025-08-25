@@ -1,6 +1,28 @@
 import { Preferences } from "@capacitor/preferences";
 import CryptoJS from "crypto-js";
 
+// Enhanced Template Metadata Interface
+export interface TemplateMetadata {
+  template: string;
+  templateId: number;
+  footers: {
+    name: string;
+    index: number;
+    isActive: boolean;
+  }[];
+  logoCell: string | null;
+  signatureCell: string | null;
+  cellMappings: {
+    [headingName: string]: {
+      [cellName: string]: {
+        heading: string;
+        datatype: string;
+      };
+    };
+  };
+}
+
+// Enhanced File class with template metadata
 export class File {
   created: string;
   modified: string;
@@ -9,6 +31,7 @@ export class File {
   billType: number;
   isEncrypted: boolean;
   password?: string;
+  templateMetadata: TemplateMetadata;
 
   constructor(
     created: string,
@@ -16,7 +39,8 @@ export class File {
     content: string,
     name: string,
     billType: number,
-    isEncrypted: boolean = false,
+    templateMetadataOrIsEncrypted?: TemplateMetadata | boolean,
+    isEncryptedOrPassword?: boolean | string,
     password?: string
   ) {
     this.created = created;
@@ -24,8 +48,35 @@ export class File {
     this.content = content;
     this.name = name;
     this.billType = billType;
-    this.isEncrypted = isEncrypted;
-    this.password = password;
+
+    // Handle backward compatibility
+    if (typeof templateMetadataOrIsEncrypted === "boolean") {
+      // Old constructor signature: (created, modified, content, name, billType, isEncrypted, password)
+      this.isEncrypted = templateMetadataOrIsEncrypted;
+      this.password = isEncryptedOrPassword as string;
+
+      // Create default template metadata
+      this.templateMetadata = {
+        template: `Template ${billType}`,
+        templateId: billType,
+        footers: [],
+        logoCell: null,
+        signatureCell: null,
+        cellMappings: {},
+      };
+    } else {
+      // New constructor signature: (created, modified, content, name, billType, templateMetadata, isEncrypted, password)
+      this.templateMetadata = templateMetadataOrIsEncrypted || {
+        template: `Template ${billType}`,
+        templateId: billType,
+        footers: [],
+        logoCell: null,
+        signatureCell: null,
+        cellMappings: {},
+      };
+      this.isEncrypted = (isEncryptedOrPassword as boolean) || false;
+      this.password = password;
+    }
   }
 }
 
@@ -52,6 +103,7 @@ export class Local {
       name: file.name,
       billType: file.billType,
       isEncrypted: file.isEncrypted,
+      templateMetadata: file.templateMetadata,
     };
 
     // If file is password protected, encrypt the content
@@ -99,6 +151,7 @@ export class Local {
         created: (data as any).created,
         modified: (data as any).modified,
         isEncrypted: (data as any).isEncrypted || false,
+        templateMetadata: (data as any).templateMetadata || null,
       };
     }
     return arr;
@@ -125,5 +178,68 @@ export class Local {
     } catch (error) {
       return false;
     }
+  };
+
+  // Get files by template ID
+  _getFilesByTemplate = async (templateId: number) => {
+    const allFiles = await this._getAllFiles();
+    const templateFiles = {};
+
+    for (const [fileName, fileInfo] of Object.entries(allFiles)) {
+      if ((fileInfo as any).templateMetadata?.templateId === templateId) {
+        templateFiles[fileName] = fileInfo;
+      }
+    }
+
+    return templateFiles;
+  };
+
+  // Get template metadata for a specific file
+  _getTemplateMetadata = async (
+    fileName: string
+  ): Promise<TemplateMetadata | null> => {
+    try {
+      const data = await this._getFile(fileName);
+      return data.templateMetadata || null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  // Update template metadata for a file
+  _updateTemplateMetadata = async (
+    fileName: string,
+    metadata: TemplateMetadata
+  ) => {
+    try {
+      const data = await this._getFile(fileName);
+      data.templateMetadata = metadata;
+      data.modified = new Date().toISOString();
+
+      await Preferences.set({
+        key: fileName,
+        value: JSON.stringify(data),
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error updating template metadata:", error);
+      return false;
+    }
+  };
+
+  // Get unique template IDs from all files
+  _getAvailableTemplates = async () => {
+    const allFiles = await this._getAllFiles();
+    const templateIds = new Set<number>();
+
+    for (const fileInfo of Object.values(allFiles)) {
+      const templateId = (fileInfo as any).templateMetadata?.templateId;
+      if (templateId) {
+        templateIds.add(templateId);
+      }
+    }
+
+    return Array.from(templateIds);
   };
 }

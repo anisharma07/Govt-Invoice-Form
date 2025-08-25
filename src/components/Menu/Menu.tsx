@@ -16,7 +16,7 @@ import {
   documents,
   key,
 } from "ionicons/icons";
-import { APP_NAME, DATA } from "../../app-data";
+import { APP_NAME, DATA } from "../../templates.js";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useInvoice } from "../../contexts/InvoiceContext";
 import { exportHTMLAsPDF } from "../../services/exportAsPdf.js";
@@ -56,9 +56,9 @@ const Menu: React.FC<{
   /* Utility functions */
   const _validateName = async (filename) => {
     filename = filename.trim();
-    if (filename === "default" || filename === "Untitled") {
+    if (filename === "Untitled") {
       setToastMessage(
-        "cannot update default or Untitled file! Use Save As Button to save."
+        "cannot update Untitled file! Use Save As Button to save."
       );
       return false;
     } else if (filename === "" || !filename) {
@@ -338,6 +338,10 @@ const Menu: React.FC<{
 
       // Get all sheets data using the new function from index.js
       const sheetsData = AppGeneral.getAllSheetsData();
+      if (sheetsData.length > 3) {
+        console.log(sheetsData);
+        return;
+      }
 
       if (!sheetsData || sheetsData.length === 0) {
         setToastMessage("No sheets available to export");

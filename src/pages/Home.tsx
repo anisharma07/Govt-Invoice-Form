@@ -24,7 +24,7 @@ import {
   IonFabButton,
   isPlatform,
 } from "@ionic/react";
-import { APP_NAME, DATA } from "../app-data";
+import { APP_NAME, DATA } from "../templates";
 import * as AppGeneral from "../components/socialcalc/index.js";
 import { useEffect, useState, useRef } from "react";
 import { Local, File } from "../components/Storage/LocalStorage";
@@ -43,6 +43,9 @@ import {
   downloadOutline,
   createOutline,
   refreshOutline,
+  arrowBack,
+  documentText,
+  folder,
 } from "ionicons/icons";
 import "./Home.css";
 import FileOptions from "../components/FileMenu/FileOptions";
@@ -51,6 +54,7 @@ import PWAInstallPrompt from "../components/PWAInstallPrompt";
 import { usePWA } from "../hooks/usePWA";
 import { useTheme } from "../contexts/ThemeContext";
 import { useInvoice } from "../contexts/InvoiceContext";
+import { useHistory, useParams } from "react-router-dom";
 import InvoiceForm from "../components/InvoiceForm";
 // import WalletConnection from "../components/wallet/WalletConnection";
 import {
@@ -59,13 +63,19 @@ import {
   isQuotaExceededError,
   getQuotaExceededMessage,
 } from "../utils/helper";
+import { TemplateInitializer } from "../utils/templateInitializer";
+import { TemplateManager } from "../utils/templateManager";
 // import { cloudService } from "../services/cloud-service";
 
 const Home: React.FC = () => {
   const { isDarkMode } = useTheme();
-  const { selectedFile, billType, store, updateSelectedFile, updateBillType } =
+  const { selectedFile, billType, store, updateSelectedFile, updateBillType, activeTempId, updateActiveTempId } =
     useInvoice();
   const { isInstallable, isInstalled, isOnline, installApp } = usePWA();
+  const history = useHistory();
+  const { fileName } = useParams<{ fileName?: string }>();
+
+  const [fileNotFound, setFileNotFound] = useState(false);
 
   const [showMenu, setShowMenu] = useState(false);
   const [device] = useState(AppGeneral.getDeviceType());
@@ -199,7 +209,26 @@ const Home: React.FC = () => {
     try {
       const content = encodeURIComponent(AppGeneral.getSpreadsheetContent());
       const now = new Date().toISOString();
-      const file = new File(now, now, content, fileName, billType);
+      
+      // Get template metadata for the current active template
+      const metadata = TemplateInitializer.getTemplateMetadata(activeTempId);
+      
+      const file = new File(
+        now, 
+        now, 
+        content, 
+        fileName, 
+        billType,
+        metadata || {
+          template: `Template ${activeTempId}`,
+          templateId: activeTempId,
+          footers: [],
+          logoCell: null,
+          signatureCell: null,
+          cellMappings: {},
+        },
+        false
+      );
       await store._saveFile(file);
 
       setToastMessage(`File "${fileName}" saved locally!`);
@@ -222,82 +251,59 @@ const Home: React.FC = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // First try to load the default file from local storage
-        const defaultExists = await store._checkKey("default");
-        if (defaultExists) {
-          const defaultFile = await store._getFile("default");
-          const decodedContent = decodeURIComponent(defaultFile.content);
-
-          AppGeneral.viewFile("default", decodedContent);
-          updateBillType(defaultFile.billType);
-          console.log("Loaded existing default file from local storage");
-        } else {
-          // If no default file exists, initialize with template data and save it
-          const data = DATA["home"]["App"]["msc"];
-          AppGeneral.initializeApp(JSON.stringify(data));
-
-          // Save the initial template as the default file
-          const initialContent = encodeURIComponent(JSON.stringify(data));
-          const now = new Date().toISOString();
-          const file = new File(now, now, initialContent, "default", billType);
-          await store._saveFile(file);
-          console.log("Created and saved new default file");
+        // Initialize template system first
+        const isTemplateInitialized = await TemplateInitializer.isInitialized();
+        if (!isTemplateInitialized) {
+          await TemplateInitializer.initializeApp();
         }
+
+        // Determine which file to load
+        let fileToLoad = fileName || selectedFile;
+
+        // If no file is specified in URL or context, redirect to files page
+        if (!fileToLoad) {
+          console.log("No file specified, redirecting to files");
+          history.push("/app/files");
+          return;
+        }
+
+        // Check if the file exists in storage
+        const fileExists = await store._checkKey(fileToLoad);
+        if (!fileExists) {
+          console.log(`File "${fileToLoad}" not found`);
+          setFileNotFound(true);
+          return;
+        }
+
+        // Load the file
+        const fileData = await store._getFile(fileToLoad);
+        const decodedContent = decodeURIComponent(fileData.content);
+
+        // Update context if URL parameter is different from selected file
+        if (fileName && fileName !== selectedFile) {
+          updateSelectedFile(fileName);
+        }
+
+        // Use initializeApp instead of viewFile to ensure proper SocialCalc setup
+        AppGeneral.initializeApp(decodedContent);
+        updateBillType(fileData.billType);
+        
+        // Update active template if file has template metadata
+        if (fileData.templateMetadata?.templateId) {
+          updateActiveTempId(fileData.templateMetadata.templateId);
+        }
+        
+        console.log("Loaded file:", fileToLoad);
+        setFileNotFound(false);
       } catch (error) {
         console.error("Error initializing app:", error);
-
-        // Check if the error is due to storage quota exceeded
-        if (isQuotaExceededError(error)) {
-          setToastMessage(getQuotaExceededMessage("initializing the app"));
-          setToastColor("danger");
-          setShowToast(true);
-        }
-        const data = DATA["home"]["App"]["msc"];
-        AppGeneral.initializeApp(JSON.stringify(data));
-        AppGeneral.changeSheetColor("#000000");
+        // On error, show file not found
+        setFileNotFound(true);
       }
-      // Alternative smooth scrolling implementation
-      setTimeout(() => {
-        const gridDiv = document.getElementById("te_griddiv");
-        if (gridDiv) {
-          // Force smooth scrolling CSS
-          gridDiv.style.scrollBehavior = "smooth";
-
-          // Override SocialCalc's internal scrolling
-          const tables = gridDiv.querySelectorAll("table");
-          tables.forEach((table) => {
-            table.style.scrollBehavior = "smooth";
-          });
-
-          // Intercept keyboard navigation to use smooth scrolling
-          gridDiv.addEventListener("keydown", function (e) {
-            const step = 30; // Pixels to scroll per key press
-
-            switch (e.key) {
-              case "ArrowUp":
-                e.preventDefault();
-                gridDiv.scrollBy({ top: -step, behavior: "smooth" });
-                break;
-              case "ArrowDown":
-                e.preventDefault();
-                gridDiv.scrollBy({ top: step, behavior: "smooth" });
-                break;
-              case "ArrowLeft":
-                e.preventDefault();
-                gridDiv.scrollBy({ left: -step, behavior: "smooth" });
-                break;
-              case "ArrowRight":
-                e.preventDefault();
-                gridDiv.scrollBy({ left: step, behavior: "smooth" });
-                break;
-            }
-          });
-        }
-      }, 1000);
     };
 
     initializeApp();
-  }, []);
+  }, [fileName, selectedFile]);
 
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(
     null
@@ -306,24 +312,24 @@ const Home: React.FC = () => {
   const handleAutoSave = async () => {
     try {
       console.log("Auto-saving file...");
-      const content = encodeURIComponent(AppGeneral.getSpreadsheetContent());
-
-      if (selectedFile === "default") {
-        // Autosave the default file to local storage
-        const now = new Date().toISOString();
-        const file = new File(now, now, content, "default", billType);
-        await store._saveFile(file);
+      
+      // If no file is selected, can't autosave
+      if (!selectedFile) {
         return;
       }
 
-      // For named files, get existing metadata and update
+      const content = encodeURIComponent(AppGeneral.getSpreadsheetContent());
+
+      // Get existing metadata and update
       const data = await store._getFile(selectedFile);
       const file = new File(
         (data as any)?.created || new Date().toISOString(),
         new Date().toISOString(),
         content,
         selectedFile,
-        billType
+        billType,
+        (data as any)?.templateMetadata,
+        false
       );
       await store._saveFile(file);
       updateSelectedFile(selectedFile);
@@ -407,7 +413,7 @@ const Home: React.FC = () => {
     }
   }, [isDarkMode, activeFontColor]);
 
-  const footers = DATA["home"]["App"]["footers"];
+  const footers = DATA[activeTempId]["footers"];
   const footersList = footers.map((footerArray) => {
     const isActive = footerArray.index === billType;
 
@@ -441,7 +447,16 @@ const Home: React.FC = () => {
     >
       <IonHeader>
         <IonToolbar color="primary">
-          <IonButtons slot="start" className="editing-title">
+          <IonButtons slot="start">
+            <IonButton 
+              fill="clear" 
+              onClick={() => history.push("/app/files")}
+              style={{ color: "white" }}
+            >
+              <IonIcon icon={arrowBack} />
+            </IonButton>
+          </IonButtons>
+          <IonButtons slot="start" className="editing-title" style={{ marginLeft: "8px" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
               <IonIcon
                 icon={pencil}
@@ -457,7 +472,7 @@ const Home: React.FC = () => {
               ) : (
                 <span>{selectedFile}</span>
               )}
-              {selectedFile !== "default" && (
+              {selectedFile && (
                 <IonButton
                   fill="clear"
                   size="small"
@@ -533,11 +548,58 @@ const Home: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
-        <div id="container">
-          <div id="workbookControl"></div>
-          <div id="tableeditor"></div>
-          <div id="msg"></div>
-        </div>
+        {fileNotFound ? (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            padding: "40px 20px",
+            textAlign: "center"
+          }}>
+            <IonIcon 
+              icon={documentText} 
+              style={{ 
+                fontSize: "80px", 
+                color: "var(--ion-color-medium)",
+                marginBottom: "20px"
+              }}
+            />
+            <h2 style={{ 
+              margin: "0 0 16px 0", 
+              color: "var(--ion-color-dark)",
+              fontSize: "24px",
+              fontWeight: "600"
+            }}>
+              File Not Found
+            </h2>
+            <p style={{ 
+              margin: "0 0 30px 0", 
+              color: "var(--ion-color-medium)",
+              fontSize: "16px",
+              lineHeight: "1.5",
+              maxWidth: "400px"
+            }}>
+              {fileName ? `The file "${fileName}" doesn't exist in your storage.` : "The requested file couldn't be found."}
+            </p>
+            <IonButton 
+              fill="solid" 
+              size="default"
+              onClick={() => history.push("/app/files")}
+              style={{ minWidth: "200px" }}
+            >
+              <IonIcon icon={folder} slot="start" />
+              Go to File Explorer
+            </IonButton>
+          </div>
+        ) : (
+          <div id="container">
+            <div id="workbookControl"></div>
+            <div id="tableeditor"></div>
+            <div id="msg"></div>
+          </div>
+        )}
 
         {/* Toast for save notifications */}
         <IonToast

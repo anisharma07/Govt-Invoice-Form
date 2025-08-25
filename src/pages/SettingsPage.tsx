@@ -55,12 +55,14 @@ import {
   cloudDoneOutline,
   refreshOutline,
   bug,
+  arrowBack,
 } from "ionicons/icons";
 import SignatureCanvas from "react-signature-canvas";
 import Menu from "../components/Menu/Menu";
 import { Local } from "../components/Storage/LocalStorage";
 import { useTheme } from "../contexts/ThemeContext";
 import { useInvoice } from "../contexts/InvoiceContext";
+import { useHistory } from "react-router-dom";
 import PWAInstallPrompt from "../components/PWAInstallPrompt";
 import PWADemo from "../components/PWADemo";
 // import { usePushNotifications } from "../utils/pushNotifications";
@@ -79,6 +81,7 @@ import "./SettingsPage.css";
 const SettingsPage: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
   const { isDarkMode, toggleDarkMode } = useTheme();
+  const history = useHistory();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -859,6 +862,14 @@ const SettingsPage: React.FC = () => {
     >
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="start">
+            <IonButton 
+              fill="clear" 
+              onClick={() => history.push("/app/files")}
+            >
+              <IonIcon icon={arrowBack} />
+            </IonButton>
+          </IonButtons>
           <IonTitle style={{ fontWeight: "bold", fontSize: "1.3em" }}>
             Settings
           </IonTitle>

@@ -10,14 +10,18 @@ export interface TemplateMetadata {
     index: number;
     isActive: boolean;
   }[];
-  logoCell: string | null;
-  signatureCell: string | null;
+  logoCell: string | { [footerIndex: number]: string };
+  signatureCell: string | { [footerIndex: number]: string };
   cellMappings: {
-    [headingName: string]: {
-      [cellName: string]: {
-        heading: string;
-        datatype: string;
-      };
+    [footerIndex: number]: {
+      [fieldName: string]:
+        | string
+        | { [subField: string]: any }
+        | {
+            name?: string;
+            Range?: { start: number; end: number };
+            Content?: { [fieldName: string]: string };
+          };
     };
   };
 }

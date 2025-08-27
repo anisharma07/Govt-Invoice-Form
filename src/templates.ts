@@ -32,14 +32,23 @@ export interface TemplateData {
     index: number;
     isActive: boolean;
   }[];
-  logoCell: string | null;
-  signatureCell: string | null;
+  logoCell: string | { [footerIndex: number]: string };
+  signatureCell: string | { [footerIndex: number]: string };
   cellMappings: {
-    [headingName: string]: {
-      [cellName: string]: {
-        heading: string;
-        datatype: string;
-      };
+    [footerIndex: number]: {
+      [fieldName: string]:
+        | string
+        | { [subField: string]: any }
+        | {
+            name?: string;
+            Range?: {
+              start: number;
+              end: number;
+            };
+            Content?: {
+              [fieldName: string]: string;
+            };
+          };
     };
   };
 }
@@ -304,9 +313,74 @@ export let DATA: { [key: number]: TemplateData } = {
       { name: "Detail2", index: 2, isActive: false },
       { name: "Invoice", index: 3, isActive: false },
     ],
-    logoCell: null,
-    signatureCell: null,
-    cellMappings: {},
+    logoCell: {
+      1: "",
+      2: "",
+      3: "F8",
+    },
+    signatureCell: {
+      1: "",
+      2: "",
+      3: "",
+    },
+    cellMappings: {
+      1: {
+        Heading: "B2",
+        Items: {
+          Range: {
+            start: 6,
+            end: 18,
+          },
+          Content: {
+            Description: "B",
+            Hours: "E",
+            Rate: "F",
+          },
+        },
+      },
+      2: {
+        Heading: "B2",
+        Items: {
+          name: "Items",
+          Range: {
+            start: 6,
+            end: 18,
+          },
+          Content: {
+            Description: "B",
+            Qty: "E",
+            Price: "F",
+          },
+        },
+      },
+      3: {
+        Heading: "B2",
+        Date: "G4",
+        InvoiceNumber: "B5",
+        From: {
+          CompanyName: "B8",
+          StreetAddress: "B9",
+          CityStateZip: "B10",
+          Phone: "B11",
+          Email: "B12",
+        },
+        BillTo: {
+          Name: "B15",
+          CompanyName: "B16",
+          StreetAddress: "B17",
+          CityStateZip: "B18",
+          Phone: "B19",
+          Email: "B20",
+        },
+        TaxPercentage: "G37",
+        OtherCharges: "G39",
+        Notes: {
+          1: "B38",
+          2: "B39",
+          3: "B40",
+        },
+      },
+    },
   },
   2: {
     template: "Mobile Invoice 2",
@@ -539,8 +613,83 @@ export let DATA: { [key: number]: TemplateData } = {
       { name: "Invoice 1", index: 1, isActive: true },
       { name: "Invoice 2", index: 2, isActive: false },
     ],
-    logoCell: null,
-    signatureCell: null,
-    cellMappings: {},
+    logoCell: {
+      1: "F7",
+      2: "F7",
+    },
+    signatureCell: {
+      1: "",
+      2: "",
+    },
+    cellMappings: {
+      1: {
+        Heading: "B2",
+        Date: "G4",
+        InvoiceNumber: "C18",
+        From: {
+          Name: "C12",
+          StreetAddress: "C13",
+          CityStateZip: "C14",
+          Phone: "D15",
+          Email: "C16",
+        },
+        BillTo: {
+          Name: "C5",
+          StreetAddress: "C6",
+          CityStateZip: "C7",
+          Phone: "C8",
+          Email: "C9",
+        },
+        Items: {
+          name: "Items",
+          Range: {
+            start: 23,
+            end: 35,
+          },
+          Content: {
+            Description: "C",
+            Amount: "F",
+          },
+        },
+        Notes: "B39",
+      },
+      2: {
+        Heading: "B2",
+        Date: "G4",
+        InvoiceNumber: "B5",
+        From: {
+          Name: "B8",
+          StreetAddress: "B9",
+          CityStateZip: "B10",
+          Phone: "B11",
+          Email: "B12",
+        },
+        BillTo: {
+          Name: "B15",
+          StreetAddress: "B17",
+          CityStateZip: "B18",
+          Phone: "B19",
+          Email: "B20",
+        },
+        Items: {
+          name: "Items",
+          Range: {
+            start: 23,
+            end: 35,
+          },
+          Content: {
+            Description: "B",
+            Amount: "G",
+          },
+        },
+        TaxRate: "G37",
+        OtherCharges: "G39",
+        Notes: {
+          1: "B38",
+          2: "B39",
+          3: "B40",
+        },
+      },
+    },
   },
 };

@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import FilesPage from "./pages/FilesPage";
 import SettingsPage from "./pages/SettingsPage";
 import LandingPage from "./pages/LandingPage";
+import DynamicFormDemo from "./components/DynamicFormDemo";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { InvoiceProvider } from "./contexts/InvoiceContext";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
@@ -87,6 +88,9 @@ const AppContent: React.FC = () => {
                 </Route>
                 <Route exact path="/app/settings">
                   <SettingsPage />
+                </Route>
+                <Route exact path="/app/demo">
+                  <DynamicFormDemo />
                 </Route>
                 <Route exact path="/app">
                   <Redirect to="/app/files" />

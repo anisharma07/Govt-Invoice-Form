@@ -25,6 +25,33 @@
   margin-bottom: 16px;
 }
 
+/* Dynamic form specific styles */
+.item-group {
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px solid var(--ion-color-light-shade);
+  border-radius: 8px;
+  background: var(--ion-color-light-tint);
+}
+
+.item-group:last-child {
+  margin-bottom: 0;
+}
+
+.dynamic-form-section {
+  margin-bottom: 20px;
+}
+
+.footer-selection {
+  margin-bottom: 20px;
+  background: var(--ion-color-primary-tint);
+}
+
+.footer-selection ion-card-header {
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+}
+
 @media (max-width: 768px) {
   .invoice-form-modal {
     --width: 100vw;

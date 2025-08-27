@@ -56,6 +56,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useInvoice } from "../contexts/InvoiceContext";
 import { useHistory, useParams } from "react-router-dom";
 import InvoiceForm from "../components/InvoiceForm";
+import DynamicInvoiceForm from "../components/DynamicInvoiceForm";
 // import WalletConnection from "../components/wallet/WalletConnection";
 import {
   isDefaultFileEmpty,
@@ -810,7 +811,7 @@ const Home: React.FC = () => {
           </IonContent>
         </IonModal>
 
-        <InvoiceForm
+        <DynamicInvoiceForm
           isOpen={showInvoiceForm}
           onClose={() => setShowInvoiceForm(false)}
         />

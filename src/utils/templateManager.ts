@@ -127,28 +127,37 @@ export class TemplateManager {
   static generateDefaultCellMappings(
     templateId: number
   ): TemplateMetadata["cellMappings"] {
-    // Default mappings based on common invoice patterns
+    // Default mappings based on footer index (0 = first footer, 1 = second footer, etc.)
     const defaultMappings: TemplateMetadata["cellMappings"] = {
-      "Company Information": {
-        B8: { heading: "Company Name", datatype: "text" },
-        B9: { heading: "Street Address", datatype: "text" },
-        B10: { heading: "City, State, Zip", datatype: "text" },
-        B11: { heading: "Phone", datatype: "text" },
-        B12: { heading: "Email", datatype: "email" },
+      0: {
+        "Company Name": "B8",
+        "Street Address": "B9",
+        City: "B10",
+        Phone: "B11",
+        Email: "B12",
+        "Invoice Number": "B5",
+        Date: "F4",
+        "Due Date": "G4",
+        "Customer Name": "B15",
+        "Customer Company": "B16",
+        "Customer Address": "B17",
+        "Customer Phone": "B19",
+        "Customer Email": "B20",
       },
-      "Invoice Details": {
-        B2: { heading: "Invoice Title", datatype: "text" },
-        B5: { heading: "Invoice Number", datatype: "text" },
-        F4: { heading: "Date", datatype: "date" },
-        G4: { heading: "Due Date", datatype: "date" },
-      },
-      "Bill To": {
-        B15: { heading: "Customer Name", datatype: "text" },
-        B16: { heading: "Customer Company", datatype: "text" },
-        B17: { heading: "Customer Address", datatype: "text" },
-        B18: { heading: "Customer City, State, Zip", datatype: "text" },
-        B19: { heading: "Customer Phone", datatype: "text" },
-        B20: { heading: "Customer Email", datatype: "email" },
+      1: {
+        "Company Name": "B8",
+        "Street Address": "B9",
+        City: "B10",
+        Phone: "B11",
+        Email: "B12",
+        "Invoice Number": "B5",
+        Date: "F4",
+        "Due Date": "G4",
+        "Customer Name": "B15",
+        "Customer Company": "B16",
+        "Customer Address": "B17",
+        "Customer Phone": "B19",
+        "Customer Email": "B20",
       },
     };
 

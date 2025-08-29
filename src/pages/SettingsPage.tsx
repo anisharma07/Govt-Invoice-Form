@@ -873,15 +873,6 @@ const SettingsPage: React.FC = () => {
           <IonTitle style={{ fontWeight: "bold", fontSize: "1.3em" }}>
             Settings
           </IonTitle>
-          <IonButtons slot="end">
-            <IonButton
-              fill="clear"
-              onClick={toggleDarkMode}
-              style={{ fontSize: "1.5em" }}
-            >
-              <IonIcon icon={isDarkMode ? sunny : moon} />
-            </IonButton>
-          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent
@@ -923,15 +914,6 @@ const SettingsPage: React.FC = () => {
               </IonCardHeader>
               <IonCardContent>
                 <IonList>
-                  <IonItem>
-                    <IonIcon icon={isDarkMode ? moon : sunny} slot="start" />
-                    <IonLabel>Dark Mode</IonLabel>
-                    <IonToggle
-                      checked={isDarkMode}
-                      onIonChange={(e) => toggleDarkMode()}
-                      slot="end"
-                    />
-                  </IonItem>
                   <IonItem button onClick={handleResetOnboarding}>
                     <IonIcon icon={informationCircle} slot="start" />
                     <IonLabel>

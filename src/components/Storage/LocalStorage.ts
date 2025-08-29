@@ -1,32 +1,7 @@
 import { Preferences } from "@capacitor/preferences";
 import CryptoJS from "crypto-js";
 
-// Enhanced Template Metadata Interface
-export interface TemplateMetadata {
-  template: string;
-  templateId: number;
-  footers: {
-    name: string;
-    index: number;
-    isActive: boolean;
-  }[];
-  logoCell: string | { [footerIndex: number]: string };
-  signatureCell: string | { [footerIndex: number]: string };
-  cellMappings: {
-    [footerIndex: number]: {
-      [fieldName: string]:
-        | string
-        | { [subField: string]: any }
-        | {
-            name?: string;
-            Range?: { start: number; end: number };
-            Content?: { [fieldName: string]: string };
-          };
-    };
-  };
-}
-
-// Enhanced File class with template metadata
+// Enhanced File class with template ID only
 export class File {
   created: string;
   modified: string;
@@ -35,7 +10,7 @@ export class File {
   billType: number;
   isEncrypted: boolean;
   password?: string;
-  templateMetadata: TemplateMetadata;
+  templateId: number;
 
   constructor(
     created: string,
@@ -43,7 +18,7 @@ export class File {
     content: string,
     name: string,
     billType: number,
-    templateMetadataOrIsEncrypted?: TemplateMetadata | boolean,
+    templateIdOrIsEncrypted?: number | boolean,
     isEncryptedOrPassword?: boolean | string,
     password?: string
   ) {
@@ -54,30 +29,14 @@ export class File {
     this.billType = billType;
 
     // Handle backward compatibility
-    if (typeof templateMetadataOrIsEncrypted === "boolean") {
+    if (typeof templateIdOrIsEncrypted === "boolean") {
       // Old constructor signature: (created, modified, content, name, billType, isEncrypted, password)
-      this.isEncrypted = templateMetadataOrIsEncrypted;
+      this.isEncrypted = templateIdOrIsEncrypted;
       this.password = isEncryptedOrPassword as string;
-
-      // Create default template metadata
-      this.templateMetadata = {
-        template: `Template ${billType}`,
-        templateId: billType,
-        footers: [],
-        logoCell: null,
-        signatureCell: null,
-        cellMappings: {},
-      };
+      this.templateId = billType; // Use billType as default template ID for backward compatibility
     } else {
-      // New constructor signature: (created, modified, content, name, billType, templateMetadata, isEncrypted, password)
-      this.templateMetadata = templateMetadataOrIsEncrypted || {
-        template: `Template ${billType}`,
-        templateId: billType,
-        footers: [],
-        logoCell: null,
-        signatureCell: null,
-        cellMappings: {},
-      };
+      // New constructor signature: (created, modified, content, name, billType, templateId, isEncrypted, password)
+      this.templateId = templateIdOrIsEncrypted || billType;
       this.isEncrypted = (isEncryptedOrPassword as boolean) || false;
       this.password = password;
     }
@@ -107,7 +66,7 @@ export class Local {
       name: file.name,
       billType: file.billType,
       isEncrypted: file.isEncrypted,
-      templateMetadata: file.templateMetadata,
+      templateId: file.templateId,
     };
 
     // If file is password protected, encrypt the content
@@ -155,7 +114,7 @@ export class Local {
         created: (data as any).created,
         modified: (data as any).modified,
         isEncrypted: (data as any).isEncrypted || false,
-        templateMetadata: (data as any).templateMetadata || null,
+        templateId: (data as any).templateId || null,
       };
     }
     return arr;
@@ -190,7 +149,7 @@ export class Local {
     const templateFiles = {};
 
     for (const [fileName, fileInfo] of Object.entries(allFiles)) {
-      if ((fileInfo as any).templateMetadata?.templateId === templateId) {
+      if ((fileInfo as any).templateId === templateId) {
         templateFiles[fileName] = fileInfo;
       }
     }
@@ -198,26 +157,21 @@ export class Local {
     return templateFiles;
   };
 
-  // Get template metadata for a specific file
-  _getTemplateMetadata = async (
-    fileName: string
-  ): Promise<TemplateMetadata | null> => {
+  // Get template ID for a specific file
+  _getTemplateId = async (fileName: string): Promise<number | null> => {
     try {
       const data = await this._getFile(fileName);
-      return data.templateMetadata || null;
+      return data.templateId || null;
     } catch (error) {
       return null;
     }
   };
 
-  // Update template metadata for a file
-  _updateTemplateMetadata = async (
-    fileName: string,
-    metadata: TemplateMetadata
-  ) => {
+  // Update template ID for a file
+  _updateTemplateId = async (fileName: string, templateId: number) => {
     try {
       const data = await this._getFile(fileName);
-      data.templateMetadata = metadata;
+      data.templateId = templateId;
       data.modified = new Date().toISOString();
 
       await Preferences.set({
@@ -227,7 +181,7 @@ export class Local {
 
       return true;
     } catch (error) {
-      console.error("Error updating template metadata:", error);
+      console.error("Error updating template ID:", error);
       return false;
     }
   };
@@ -238,7 +192,7 @@ export class Local {
     const templateIds = new Set<number>();
 
     for (const fileInfo of Object.values(allFiles)) {
-      const templateId = (fileInfo as any).templateMetadata?.templateId;
+      const templateId = (fileInfo as any).templateId;
       if (templateId) {
         templateIds.add(templateId);
       }

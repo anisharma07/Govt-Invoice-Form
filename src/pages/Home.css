@@ -1,5 +1,5 @@
 #container {
-  max-height: 70vh;
+  max-height: 100vh;
   /* position: relative; */
   /* border: #eb24fd; */
   /* border: 10px solid #eb24fd; */
@@ -23,7 +23,9 @@
   max-height: 100vh;
   /* overflow: hidden; */
 }
-
+#tableeditor{
+  height: 100vh;
+}
 /* Dark mode fixes for Home page */
 .dark-theme ion-page {
   --ion-background-color: #0d1117 !important;

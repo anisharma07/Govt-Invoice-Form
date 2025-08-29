@@ -49,7 +49,7 @@ interface DynamicInvoiceFormProps {
 }
 
 const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose }) => {
-  const { activeTempId } = useInvoice();
+  const { activeTemplateData } = useInvoice();
   const [activeFooterIndex, setActiveFooterIndex] = useState<number>(1);
   const [formData, setFormData] = useState<ProcessedFormData>({});
   const [showToast, setShowToast] = useState(false);
@@ -58,8 +58,8 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
 
   // Get current template data
   const currentTemplate = useMemo(() => {
-    return DATA[activeTempId];
-  }, [activeTempId]);
+    return activeTemplateData;
+  }, [activeTemplateData]);
 
   // Get active footer based on activeFooterIndex
   const activeFooter = useMemo(() => {
@@ -120,7 +120,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
       
       // Create invoice data object
       const invoiceData = {
-        templateId: activeTempId,
+        templateId: activeTemplateData ? activeTemplateData.templateId : 1,
         footerIndex: activeFooterIndex,
         cellData,
         dynamicData: formData,

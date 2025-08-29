@@ -77,7 +77,7 @@ const Files: React.FC<{
   updateSelectedFile: Function;
   updateBillType: Function;
 }> = (props) => {
-  const { selectedFile, updateSelectedFile, activeTempId, updateActiveTempId } =
+  const { selectedFile, updateSelectedFile, activeTemplateData, updateActiveTemplateData } =
     useInvoice();
   const { isDarkMode } = useTheme();
   const history = useHistory();
@@ -107,6 +107,9 @@ const Files: React.FC<{
     number | "all"
   >("all");
 
+  // Screen size state
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
   // Blockchain state removed - local-only mode
 
   // Template helper functions
@@ -122,21 +125,34 @@ const Files: React.FC<{
   const getFileTemplateInfo = (fileData: any) => {
     return fileData.templateMetadata || null;
   };
-
-  const handleSaveUnsavedChanges = async () => {
-    // No longer need to handle default file changes
-    // since we removed the default file concept
-  };
   
   // Edit local file
   const editFile = async (key: string) => {
     try {
-      console.log("Attempting to edit file:", key);
+      console.log("Opening file:", key);
 
-      await handleSaveUnsavedChanges();
 
-      // Simply navigate to the editor - let Home.tsx handle file loading and SocialCalc initialization
-      history.push(`/app/editor/${encodeURIComponent(key)}`);
+      // Clear any existing context state to prevent conflicts with old state
+      const fileData = await props.store._getFile(key);
+      const templateId = fileData?.templateId || 1;
+      const templateData = DATA[templateId];
+      if (!templateData) {
+        setToastMessage("Template not found");
+        setShowToast(true);
+        return;
+      }
+      updateSelectedFile(key);
+      updateActiveTemplateData(templateData);
+      
+
+      // Optional: Show loading feedback
+      setToastMessage(`Opening ${key}...`);
+      setShowToast(true);
+      // Small delay to ensure context is cleared before navigation
+      setTimeout(() => {
+         history.push(`/app/editor/${encodeURIComponent(key)}`);
+      }, 10);
+      
     } catch (error) {
       console.error("Error in editFile:", error);
       setToastMessage("Failed to navigate to editor");
@@ -508,26 +524,19 @@ const Files: React.FC<{
                       className="file-icon document-icon"
                     />
                     <IonLabel className="mobile-file-label">
-                      <h3>{file.name}</h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                        <h3 style={{ margin: "0" }}>{file.name}</h3>
+                        {file.templateMetadata && (
+                          <IonChip color="primary" outline className="template-chip">
+                            <IonIcon icon={layers} />
+                            <IonLabel>{file.templateMetadata.template}</IonLabel>
+                          </IonChip>
+                        )}
+                      </div>
                       <p>
                         Local file • {getLocalFileDateInfo(file).label}:{" "}
                         {_formatDate(getLocalFileDateInfo(file).value)}
                       </p>
-                      {file.templateMetadata && (
-                        <div style={{ marginTop: "4px" }}>
-                          <IonChip color="primary" outline>
-                            <IonIcon icon={layers} />
-                            <IonLabel>{file.templateMetadata.template}</IonLabel>
-                          </IonChip>
-                          {file.templateMetadata.footers.length > 0 && (
-                            <IonChip color="secondary" outline>
-                              <IonLabel>
-                                {file.templateMetadata.footers.length} footer(s)
-                              </IonLabel>
-                            </IonChip>
-                          )}
-                        </div>
-                      )}
                     </IonLabel>
                     <div
                       slot="end"
@@ -604,26 +613,19 @@ const Files: React.FC<{
                           className="file-icon document-icon"
                         />
                         <IonLabel className="mobile-file-label">
-                          <h3>{file.name}</h3>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                            <h3 style={{ margin: "0" }}>{file.name}</h3>
+                            {file.templateMetadata && (
+                              <IonChip color="primary" outline className="template-chip">
+                                <IonIcon icon={layers} />
+                                <IonLabel>{file.templateMetadata.template}</IonLabel>
+                              </IonChip>
+                            )}
+                          </div>
                           <p>
                             Local file • {getLocalFileDateInfo(file).label}:{" "}
                             {_formatDate(getLocalFileDateInfo(file).value)}
                           </p>
-                          {file.templateMetadata && (
-                            <div style={{ marginTop: "4px" }}>
-                              <IonChip color="primary" outline>
-                                <IonIcon icon={layers} />
-                                <IonLabel>{file.templateMetadata.template}</IonLabel>
-                              </IonChip>
-                              {file.templateMetadata.footers.length > 0 && (
-                                <IonChip color="secondary" outline>
-                                  <IonLabel>
-                                    {file.templateMetadata.footers.length} footer(s)
-                                  </IonLabel>
-                                </IonChip>
-                              )}
-                            </div>
-                          )}
                         </IonLabel>
                         <div
                           slot="end"
@@ -676,6 +678,17 @@ const Files: React.FC<{
     // eslint-disable-next-line
   }, [props.file, fileSource, searchQuery, sortBy, serverFilesLoading, selectedTemplateFilter]);
 
+  // Check screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 692);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   // Reset sort option when switching file sources to ensure compatibility
   useEffect(() => {
     if (sortBy === "date") {
@@ -727,32 +740,56 @@ const Files: React.FC<{
                   display: "flex",
                   alignItems: "center",
                   flex: "1",
-                  minWidth: "140px",
-                  maxWidth: "180px",
+                  minWidth: isSmallScreen ? "32px" : "140px",
+                  maxWidth: isSmallScreen ? "32px" : "180px",
                 }}
               >
                 <IonIcon
                   icon={layers}
-                  style={{ marginRight: "4px", fontSize: "16px" }}
+                  style={{ marginRight: isSmallScreen ? "0" : "4px", fontSize: "16px" }}
                 />
-                <IonSelect
-                  value={selectedTemplateFilter}
-                  placeholder="All Templates"
-                  onIonChange={(e) => setSelectedTemplateFilter(e.detail.value)}
-                  style={{
-                    flex: "1",
-                    "--placeholder-color": "var(--ion-color-medium)",
-                    "--color": "var(--ion-color-dark)",
-                  }}
-                  interface="popover"
-                >
-                  <IonSelectOption value="all">All Templates</IonSelectOption>
-                  {getAvailableTemplates().map((template) => (
-                    <IonSelectOption key={template.templateId} value={template.templateId}>
-                      {template.template}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
+                {!isSmallScreen && (
+                  <IonSelect
+                    value={selectedTemplateFilter}
+                    placeholder="All Templates"
+                    onIonChange={(e) => setSelectedTemplateFilter(e.detail.value)}
+                    style={{
+                      flex: "1",
+                      "--placeholder-color": "var(--ion-color-medium)",
+                      "--color": "var(--ion-color-dark)",
+                    }}
+                    interface="popover"
+                  >
+                    <IonSelectOption value="all">All Templates</IonSelectOption>
+                    {getAvailableTemplates().map((template) => (
+                      <IonSelectOption key={template.templateId} value={template.templateId}>
+                        {template.template}
+                      </IonSelectOption>
+                    ))}
+                  </IonSelect>
+                )}
+                {isSmallScreen && (
+                  <IonSelect
+                    value={selectedTemplateFilter}
+                    placeholder=""
+                    onIonChange={(e) => setSelectedTemplateFilter(e.detail.value)}
+                    style={{
+                      flex: "1",
+                      "--placeholder-color": "var(--ion-color-medium)",
+                      "--color": "var(--ion-color-dark)",
+                      width: "5px",
+                      minWidth: "5px",
+                    }}
+                    interface="popover"
+                  >
+                    <IonSelectOption value="all">All Templates</IonSelectOption>
+                    {getAvailableTemplates().map((template) => (
+                      <IonSelectOption key={template.templateId} value={template.templateId}>
+                        {template.template}
+                      </IonSelectOption>
+                    ))}
+                  </IonSelect>
+                )}
               </div>
 
               <div
@@ -760,42 +797,76 @@ const Files: React.FC<{
                   display: "flex",
                   alignItems: "center",
                   flex: "1",
-                  minWidth: "140px",
-                  maxWidth: "180px",
+                  minWidth: isSmallScreen ? "32px" : "140px",
+                  maxWidth: isSmallScreen ? "32px" : "180px",
                 }}
               >
                 <IonIcon
                   icon={swapVertical}
-                  style={{ marginRight: "4px", fontSize: "16px" }}
+                  style={{ marginRight: isSmallScreen ? "0" : "4px", fontSize: "16px" }}
                 />
-                <IonSelect
-                  value={sortBy}
-                  placeholder="Sort by"
-                  onIonChange={(e) => setSortBy(e.detail.value)}
-                  style={{
-                    flex: "1",
-                    "--placeholder-color": "var(--ion-color-medium)",
-                    "--color": "var(--ion-color-dark)",
-                  }}
-                  interface="popover"
-                >
-                  {fileSource === "local" ? (
-                    <>
-                      <IonSelectOption value="dateModified">
-                        By Date Modified
-                      </IonSelectOption>
-                      <IonSelectOption value="dateCreated">
-                        By Date Created
-                      </IonSelectOption>
-                      <IonSelectOption value="name">By Name</IonSelectOption>
-                    </>
-                  ) : (
-                    <>
-                      <IonSelectOption value="date">By Date</IonSelectOption>
-                      <IonSelectOption value="name">By Name</IonSelectOption>
-                    </>
-                  )}
-                </IonSelect>
+                {!isSmallScreen && (
+                  <IonSelect
+                    value={sortBy}
+                    placeholder="Sort by"
+                    onIonChange={(e) => setSortBy(e.detail.value)}
+                    style={{
+                      flex: "1",
+                      "--placeholder-color": "var(--ion-color-medium)",
+                      "--color": "var(--ion-color-dark)",
+                    }}
+                    interface="popover"
+                  >
+                    {fileSource === "local" ? (
+                      <>
+                        <IonSelectOption value="dateModified">
+                          By Date Modified
+                        </IonSelectOption>
+                        <IonSelectOption value="dateCreated">
+                          By Date Created
+                        </IonSelectOption>
+                        <IonSelectOption value="name">By Name</IonSelectOption>
+                      </>
+                    ) : (
+                      <>
+                        <IonSelectOption value="date">By Date</IonSelectOption>
+                        <IonSelectOption value="name">By Name</IonSelectOption>
+                      </>
+                    )}
+                  </IonSelect>
+                )}
+                {isSmallScreen && (
+                  <IonSelect
+                    value={sortBy}
+                    placeholder=""
+                    onIonChange={(e) => setSortBy(e.detail.value)}
+                    style={{
+                      flex: "1",
+                      "--placeholder-color": "var(--ion-color-medium)",
+                      "--color": "var(--ion-color-dark)",
+                      width: "5px",
+                      minWidth: "5px",
+                    }}
+                    interface="popover"
+                  >
+                    {fileSource === "local" ? (
+                      <>
+                        <IonSelectOption value="dateModified">
+                          By Date Modified
+                        </IonSelectOption>
+                        <IonSelectOption value="dateCreated">
+                          By Date Created
+                        </IonSelectOption>
+                        <IonSelectOption value="name">By Name</IonSelectOption>
+                      </>
+                    ) : (
+                      <>
+                        <IonSelectOption value="date">By Date</IonSelectOption>
+                        <IonSelectOption value="name">By Name</IonSelectOption>
+                      </>
+                    )}
+                  </IonSelect>
+                )}
               </div>
             </div>
           </div>
@@ -833,47 +904,50 @@ const Files: React.FC<{
         ]}
       />
 
-      <IonAlert
-        animated
-        isOpen={showRenameAlert}
-        onDidDismiss={() => {
-          setShowRenameAlert(false);
-          setCurrentRenameKey(null);
-          setRenameFileName("");
-        }}
-        header="Rename File"
-        message={`Enter a new name for "${currentRenameKey}"`}
-        inputs={[
-          {
-            name: "filename",
-            type: "text",
-            value: renameFileName,
-            placeholder: "Enter new filename",
-          },
-        ]}
-        buttons={[
-          {
-            text: "Cancel",
-            role: "cancel",
-            handler: () => {
-              setCurrentRenameKey(null);
-              setRenameFileName("");
+      {/* Rename File Alert Wrapper */}
+      {showRenameAlert && currentRenameKey && (
+        <IonAlert
+          animated
+          isOpen={true}
+          onDidDismiss={() => {
+            setShowRenameAlert(false);
+            setCurrentRenameKey(null);
+            setRenameFileName("");
+          }}
+          header="Rename File"
+          message={`Enter a new name for "${currentRenameKey}"`}
+          inputs={[
+            {
+              name: "filename",
+              type: "text",
+              value: renameFileName,
+              placeholder: "Enter new filename",
             },
-          },
-          {
-            text: "Rename",
-            handler: (data) => {
-              const newFileName = data.filename?.trim();
-              if (newFileName) {
-                handleRename(newFileName);
-              } else {
-                setToastMessage("Filename cannot be empty");
-                setShowToast(true);
-              }
+          ]}
+          buttons={[
+            {
+              text: "Cancel",
+              role: "cancel",
+              handler: () => {
+                setCurrentRenameKey(null);
+                setRenameFileName("");
+              },
             },
-          },
-        ]}
-      />
+            {
+              text: "Rename",
+              handler: (data) => {
+                const newFileName = data.filename?.trim();
+                if (newFileName) {
+                  handleRename(newFileName);
+                } else {
+                  setToastMessage("Filename cannot be empty");
+                  setShowToast(true);
+                }
+              },
+            },
+          ]}
+        />
+      )}
       <IonToast
         isOpen={showToast}
         onDidDismiss={() => setShowToast(false)}

@@ -1,5 +1,4 @@
 import { DATA, TemplateData } from "../templates";
-import { TemplateMetadata } from "../components/Storage/LocalStorage";
 import { TemplateManager } from "./templateManager";
 
 /**
@@ -134,13 +133,11 @@ export class TemplateInitializer {
   }
 
   /**
-   * Get template metadata
+   * Get template data
    */
-  static getTemplateMetadata(templateId: number): TemplateMetadata | null {
+  static getTemplateData(templateId: number): TemplateData | null {
     const template = this.getTemplate(templateId);
-    if (!template) return null;
-
-    return TemplateManager.extractMetadata(template);
+    return template || null;
   }
 
   /**

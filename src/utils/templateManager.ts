@@ -127,23 +127,8 @@ export class TemplateManager {
   static generateDefaultCellMappings(
     templateId: number
   ): TemplateMetadata["cellMappings"] {
-    // Default mappings based on footer index (0 = first footer, 1 = second footer, etc.)
+    // Default mappings based on footer index (1 = first footer, 2 = second footer, etc.)
     const defaultMappings: TemplateMetadata["cellMappings"] = {
-      0: {
-        "Company Name": "B8",
-        "Street Address": "B9",
-        City: "B10",
-        Phone: "B11",
-        Email: "B12",
-        "Invoice Number": "B5",
-        Date: "F4",
-        "Due Date": "G4",
-        "Customer Name": "B15",
-        "Customer Company": "B16",
-        "Customer Address": "B17",
-        "Customer Phone": "B19",
-        "Customer Email": "B20",
-      },
       1: {
         "Company Name": "B8",
         "Street Address": "B9",

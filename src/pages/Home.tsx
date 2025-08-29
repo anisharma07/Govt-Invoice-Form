@@ -22,6 +22,7 @@ import {
   IonSegmentButton,
   IonFab,
   IonFabButton,
+  IonSpinner,
   isPlatform,
 } from "@ionic/react";
 import { APP_NAME, DATA } from "../templates";
@@ -70,16 +71,16 @@ import { TemplateManager } from "../utils/templateManager";
 
 const Home: React.FC = () => {
   const { isDarkMode } = useTheme();
-  const { selectedFile, billType, store, updateSelectedFile, updateBillType, activeTempId, updateActiveTempId } =
+  const { selectedFile, billType, store, updateSelectedFile, updateBillType, activeTemplateData, updateActiveTemplateData } =
     useInvoice();
-  const { isInstallable, isInstalled, isOnline, installApp } = usePWA();
   const history = useHistory();
   const { fileName } = useParams<{ fileName?: string }>();
 
   const [fileNotFound, setFileNotFound] = useState(false);
+  const [templateNotFound, setTemplateNotFound] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const [showMenu, setShowMenu] = useState(false);
-  const [device] = useState(AppGeneral.getDeviceType());
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastColor, setToastColor] = useState<
@@ -120,10 +121,6 @@ const Home: React.FC = () => {
     { name: "white", label: "White", color: "#ffffff" },
     { name: "default", label: "Default", color: "#f4f5f8" },
   ];
-
-  const activateFooter = (footer) => {
-    AppGeneral.activateFooterButton(footer);
-  };
 
   const handleColorChange = (colorName: string) => {
     try {
@@ -208,11 +205,28 @@ const Home: React.FC = () => {
 
   const performLocalSave = async (fileName: string) => {
     try {
+      // Check if SocialCalc is ready
+      const socialCalc = (window as any).SocialCalc;
+      if (!socialCalc || !socialCalc.GetCurrentWorkBookControl) {
+        setToastMessage("Spreadsheet not ready. Please wait and try again.");
+        setToastColor("warning");
+        setShowToast(true);
+        return;
+      }
+
+      const control = socialCalc.GetCurrentWorkBookControl();
+      if (!control || !control.workbook || !control.workbook.spreadsheet) {
+        setToastMessage("Spreadsheet not ready. Please wait and try again.");
+        setToastColor("warning");
+        setShowToast(true);
+        return;
+      }
+
       const content = encodeURIComponent(AppGeneral.getSpreadsheetContent());
       const now = new Date().toISOString();
       
-      // Get template metadata for the current active template
-      const metadata = TemplateInitializer.getTemplateMetadata(activeTempId);
+      // Get template ID from active template data
+      const templateId = activeTemplateData ? activeTemplateData.templateId : billType;
       
       const file = new File(
         now, 
@@ -220,14 +234,7 @@ const Home: React.FC = () => {
         content, 
         fileName, 
         billType,
-        metadata || {
-          template: `Template ${activeTempId}`,
-          templateId: activeTempId,
-          footers: [],
-          logoCell: null,
-          signatureCell: null,
-          cellMappings: {},
-        },
+        templateId,
         false
       );
       await store._saveFile(file);
@@ -249,8 +256,31 @@ const Home: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const initializeApp = async () => {
+    const activateFooter = (footer) => {
+    // Only activate footer if SocialCalc is properly initialized
+    try {
+      const tableeditor = document.getElementById("tableeditor");
+      const socialCalc = (window as any).SocialCalc;
+      
+      // Check if SocialCalc and WorkBook control are properly initialized
+      if (tableeditor && socialCalc && socialCalc.GetCurrentWorkBookControl) {
+        const control = socialCalc.GetCurrentWorkBookControl();
+        if (control && control.workbook && control.workbook.spreadsheet) {
+          AppGeneral.activateFooterButton(footer);
+        } else {
+          console.log("SocialCalc WorkBook not ready for footer activation, skipping...");
+        }
+      } else {
+        console.log("SocialCalc not ready for footer activation, skipping...");
+      }
+    } catch (error) {
+      console.log("Error activating footer, SocialCalc might not be ready:", error);
+    }
+    };
+  
+const initializeApp = async () => {
+      setIsInitializing(true);
+      
       try {
         // Initialize template system first
         const isTemplateInitialized = await TemplateInitializer.isInitialized();
@@ -258,21 +288,28 @@ const Home: React.FC = () => {
           await TemplateInitializer.initializeApp();
         }
 
-        // Determine which file to load
-        let fileToLoad = fileName || selectedFile;
+        // Prioritize URL parameter over context to ensure fresh state
+        let fileToLoad=selectedFile;
+        if (!selectedFile || selectedFile.trim() === "") {
+          fileToLoad = fileName;
+          updateSelectedFile(fileName);
+        }
 
-        // If no file is specified in URL or context, redirect to files page
-        if (!fileToLoad) {
-          console.log("No file specified, redirecting to files");
+        // If no file is specified, redirect to files page
+        if (!fileToLoad || fileToLoad === "") {
+          // console.log("No file specified, redirecting to files");
+          setIsInitializing(false);
           history.push("/app/files");
           return;
         }
 
         // Check if the file exists in storage
+        console.log("file to load", fileToLoad);
         const fileExists = await store._checkKey(fileToLoad);
         if (!fileExists) {
           console.log(`File "${fileToLoad}" not found`);
           setFileNotFound(true);
+          setIsInitializing(false);
           return;
         }
 
@@ -280,31 +317,84 @@ const Home: React.FC = () => {
         const fileData = await store._getFile(fileToLoad);
         const decodedContent = decodeURIComponent(fileData.content);
 
-        // Update context if URL parameter is different from selected file
-        if (fileName && fileName !== selectedFile) {
-          updateSelectedFile(fileName);
+        // Get template ID from file data
+        const templateId = fileData.templateId;
+        
+        // Check if template exists in the templates library
+        if (!DATA[templateId]) {
+          console.error(`Template ${templateId} not found in templates library`);
+          setTemplateNotFound(true);
+          setFileNotFound(false);
+          setIsInitializing(false);
+          return;
         }
 
-        // Use initializeApp instead of viewFile to ensure proper SocialCalc setup
-        AppGeneral.initializeApp(decodedContent);
-        updateBillType(fileData.billType);
+        // Load template data
+        const templateData = DATA[templateId];
+        updateActiveTemplateData(templateData);
+        console.log(templateData);
+        console.log("Template data loaded successfully", fileData);
+        // Initialize SocialCalc with the file content
+        // console.log(`Initializing SocialCalc for file: ${fileToLoad}`);
         
-        // Update active template if file has template metadata
-        if (fileData.templateMetadata?.templateId) {
-          updateActiveTempId(fileData.templateMetadata.templateId);
+        // Wait a bit to ensure DOM elements are ready
+        setTimeout(() => {
+          try {
+        const currentControl = AppGeneral.getWorkbookInfo();
+        console.log("Current workbook info:", currentControl);
+
+        if (currentControl && currentControl.workbook) {
+          // SocialCalc is initialized, use viewFile
+          AppGeneral.viewFile(fileToLoad, decodedContent);
+          console.log("File loaded successfully with viewFile");
+        } else {
+          // SocialCalc not initialized, initialize it first
+          console.log("SocialCalc not initialized, initializing...");
+          AppGeneral.initializeApp(decodedContent);
+          console.log("File loaded successfully with initializeApp");
         }
-        
-        console.log("Loaded file:", fileToLoad);
+      } catch (error) {
+        console.error("Error checking SocialCalc state:", error);
+        // Fallback: try to initialize the app
+        try {
+          AppGeneral.initializeApp(decodedContent);
+          console.log("File loaded successfully with initializeApp (fallback)");
+        } catch (initError) {
+          console.error("initializeApp failed:", initError);
+          throw new Error(
+            "Failed to load file: SocialCalc initialization error"
+          );
+        }
+      }
+          
+          // Activate footer after initialization
+          setTimeout(() => {
+            activateFooter(fileData.billType);
+            setIsInitializing(false); // Set loading to false after complete initialization
+          }, 500);
+        }, 100);
+        console.log("success");
+        // console.log("Successfully loaded file:", fileToLoad);
         setFileNotFound(false);
+        setTemplateNotFound(false);
       } catch (error) {
         console.error("Error initializing app:", error);
         // On error, show file not found
         setFileNotFound(true);
+        setTemplateNotFound(false);
+        setIsInitializing(false);
       }
-    };
-
+};
+  
+  useEffect(() => {
     initializeApp();
-  }, [fileName, selectedFile]);
+  }, [selectedFile]); // Only depend on selectedFile to prevent loops with selectedFile updates
+
+  useEffect(() => {
+    if (fileName) {
+      updateSelectedFile(fileName);
+    }
+  }, [fileName]);
 
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(
     null
@@ -319,6 +409,19 @@ const Home: React.FC = () => {
         return;
       }
 
+      // Check if SocialCalc is ready
+      const socialCalc = (window as any).SocialCalc;
+      if (!socialCalc || !socialCalc.GetCurrentWorkBookControl) {
+        console.log("SocialCalc not ready for auto-save, skipping...");
+        return;
+      }
+
+      const control = socialCalc.GetCurrentWorkBookControl();
+      if (!control || !control.workbook || !control.workbook.spreadsheet) {
+        console.log("SocialCalc WorkBook not ready for auto-save, skipping...");
+        return;
+      }
+
       const content = encodeURIComponent(AppGeneral.getSpreadsheetContent());
 
       // Get existing metadata and update
@@ -329,7 +432,7 @@ const Home: React.FC = () => {
         content,
         selectedFile,
         billType,
-        (data as any)?.templateMetadata,
+        activeTemplateData ? activeTemplateData.templateId : billType,
         false
       );
       await store._saveFile(file);
@@ -350,6 +453,7 @@ const Home: React.FC = () => {
       }
     }
   };
+  
   useEffect(() => {
     const debouncedAutoSave = () => {
       if (autoSaveTimer) {
@@ -363,9 +467,35 @@ const Home: React.FC = () => {
       setAutoSaveTimer(newTimer);
     };
 
-    const removeListener = AppGeneral.setupCellChangeListener((_) => {
-      debouncedAutoSave();
-    });
+    let removeListener = () => {};
+    
+    // Wait for SocialCalc to be ready before setting up the listener
+    const setupListener = () => {
+      try {
+        const socialCalc = (window as any).SocialCalc;
+        if (socialCalc && socialCalc.GetCurrentWorkBookControl) {
+          const control = socialCalc.GetCurrentWorkBookControl();
+          if (control && control.workbook && control.workbook.spreadsheet) {
+            removeListener = AppGeneral.setupCellChangeListener((_) => {
+              debouncedAutoSave();
+            });
+          } else {
+            // Retry after a delay if WorkBook is not ready
+            setTimeout(setupListener, 2000);
+          }
+        } else {
+          // Retry after a delay if SocialCalc is not ready
+          setTimeout(setupListener, 2000);
+        }
+      } catch (error) {
+        console.log("Error setting up cell change listener:", error);
+        // Retry after a delay
+        setTimeout(setupListener, 2000);
+      }
+    };
+
+    // Start attempting to setup the listener
+    setupListener();
 
     return () => {
       removeListener();
@@ -376,7 +506,12 @@ const Home: React.FC = () => {
   }, [selectedFile, billType, autoSaveTimer]);
 
   useEffect(() => {
-    activateFooter(billType);
+    // Add a delay to ensure SocialCalc is initialized before activating footer
+    const timer = setTimeout(() => {
+      activateFooter(billType);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
   }, [billType]);
 
   // Effect to handle font color in dark mode
@@ -414,7 +549,7 @@ const Home: React.FC = () => {
     }
   }, [isDarkMode, activeFontColor]);
 
-  const footers = DATA[activeTempId]["footers"];
+  const footers = activeTemplateData ? activeTemplateData.footers : [];
   const footersList = footers.map((footerArray) => {
     const isActive = footerArray.index === billType;
 
@@ -441,6 +576,12 @@ const Home: React.FC = () => {
     );
   });
 
+  useEffect(() => {
+    // Add a delay to ensure SocialCalc is initialized before activating footer
+    console.log("Selected file changed:", selectedFile);
+    console.log("activeTemplateData", activeTemplateData);
+  }, [selectedFile, activeTemplateData]);
+
   return (
     <IonPage
       className={isDarkMode ? "dark-theme" : ""}
@@ -459,25 +600,12 @@ const Home: React.FC = () => {
           </IonButtons>
           <IonButtons slot="start" className="editing-title" style={{ marginLeft: "8px" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
-              <IonIcon
-                icon={pencil}
-                size="medium"
-                style={{ marginRight: "8px" }}
-              />
-              {isPlatform("mobile") || isPlatform("hybrid") ? (
-                <span title={selectedFile}>
-                  {selectedFile.length > 15
-                    ? `${selectedFile.substring(0, 15)}...`
-                    : selectedFile}
-                </span>
-              ) : (
-                <span>{selectedFile}</span>
-              )}
+              <span>{selectedFile}</span>
               {selectedFile && (
                 <IonButton
                   fill="clear"
                   size="small"
-                  onClick={handleAutoSave}
+                  onClick={initializeApp}
                   disabled={autoSaveTimer !== null}
                   style={{
                     minWidth: "auto",
@@ -532,12 +660,13 @@ const Home: React.FC = () => {
             />
           </IonButtons>
         </IonToolbar>
-        <IonToolbar color="secondary">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              overflowX: "auto",
+        {activeTemplateData && activeTemplateData.footers.length > 1 && (
+          <IonToolbar color="secondary">
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                overflowX: "auto",
               padding: "8px 16px",
               width: "100%",
               alignItems: "center",
@@ -545,10 +674,15 @@ const Home: React.FC = () => {
           >
             {footersList}
           </div>
-        </IonToolbar>
-      </IonHeader>
+        </IonToolbar> 
+      )}
+    </IonHeader>
 
-      <IonContent fullscreen>
+      <IonContent fullscreen
+      style={{
+        height: '100vh',
+      }}
+      >
         {fileNotFound ? (
           <div style={{
             display: "flex",
@@ -594,11 +728,120 @@ const Home: React.FC = () => {
               Go to File Explorer
             </IonButton>
           </div>
+        ) : templateNotFound ? (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            padding: "40px 20px",
+            textAlign: "center"
+          }}>
+            <IonIcon 
+              icon={downloadOutline} 
+              style={{ 
+                fontSize: "80px", 
+                color: "var(--ion-color-medium)",
+                marginBottom: "20px"
+              }}
+            />
+            <h2 style={{ 
+              margin: "0 0 16px 0", 
+              color: "var(--ion-color-dark)",
+              fontSize: "24px",
+              fontWeight: "600"
+            }}>
+              Template Not Found
+            </h2>
+            <p style={{ 
+              margin: "0 0 30px 0", 
+              color: "var(--ion-color-medium)",
+              fontSize: "16px",
+              lineHeight: "1.5",
+              maxWidth: "400px"
+            }}>
+              The file information is not downloaded. Please download the file template to open this file.
+            </p>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
+              <IonButton 
+                fill="solid" 
+                size="default"
+                onClick={() => history.push("/app/files")}
+                style={{ minWidth: "140px" }}
+              >
+                <IonIcon icon={folder} slot="start" />
+                Go to Files
+              </IonButton>
+              <IonButton 
+                fill="outline" 
+                size="default"
+                onClick={() => {
+                  // Add download template functionality here
+                  setToastMessage("Template download functionality coming soon");
+                  setToastColor("warning");
+                  setShowToast(true);
+                }}
+                style={{ minWidth: "140px" }}
+              >
+                <IonIcon icon={downloadOutline} slot="start" />
+                Download Template
+              </IonButton>
+            </div>
+          </div>
         ) : (
-          <div id="container">
-            <div id="workbookControl"></div>
-            <div id="tableeditor"></div>
-            <div id="msg"></div>
+          <div style={{ position: "relative", height: "100%" }}>
+            {/* Loading overlay */}
+            {isInitializing && (
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: isDarkMode ? "var(--ion-background-color)" : "var(--ion-background-color)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 1000,
+                padding: "40px 20px",
+                textAlign: "center"
+              }}>
+                <IonSpinner 
+                  name="crescent" 
+                  style={{ 
+                    fontSize: "60px", 
+                    color: "var(--ion-color-primary)",
+                    marginBottom: "20px"
+                  }}
+                />
+                <h2 style={{ 
+                  margin: "0 0 16px 0", 
+                  color: "var(--ion-color-dark)",
+                  fontSize: "24px",
+                  fontWeight: "600"
+                }}>
+                  Initializing App
+                </h2>
+                <p style={{ 
+                  margin: "0", 
+                  color: "var(--ion-color-medium)",
+                  fontSize: "16px",
+                  lineHeight: "1.5",
+                  maxWidth: "400px"
+                }}>
+                  Please wait while we load your invoice template and prepare the editor...
+                </p>
+              </div>
+            )}
+            
+            {/* SocialCalc container - always rendered */}
+            <div id="container">
+              <div id="workbookControl"></div>
+              <div id="tableeditor"></div>
+              <div id="msg"></div>
+            </div>
           </div>
         )}
 

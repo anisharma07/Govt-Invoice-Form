@@ -1,4 +1,4 @@
-import { TemplateData } from "../templates";
+import { TemplateData, ItemsConfig } from "../templates";
 
 export interface DynamicFormField {
   label: string;
@@ -64,17 +64,20 @@ export class DynamicFormManager {
     const sections: DynamicFormSection[] = [];
 
     Object.entries(cellMappings).forEach(([key, value]) => {
-      if (key === "Items") {
-        // Special handling for Items
-        const itemsConfig = value as any;
+      if (key === "Items" && this.isItemsConfig(value)) {
+        // Handle new Items structure with Name, Rows, and Columns
+        const itemsConfig = value as ItemsConfig;
         sections.push({
-          title: itemsConfig.name || "Items",
+          title: itemsConfig.Name,
           fields: [],
           isItems: true,
           itemsConfig: {
-            name: itemsConfig.name || "Items",
-            range: itemsConfig.Range || { start: 1, end: 10 },
-            content: itemsConfig.Content || {},
+            name: itemsConfig.Name,
+            range: {
+              start: itemsConfig.Rows.start,
+              end: itemsConfig.Rows.end,
+            },
+            content: itemsConfig.Columns,
           },
         });
       } else if (typeof value === "string") {
@@ -121,6 +124,24 @@ export class DynamicFormManager {
     });
 
     return sections;
+  }
+
+  /**
+   * Type guard to check if an object is an ItemsConfig
+   * @param value The value to check
+   * @returns True if the value is an ItemsConfig
+   */
+  static isItemsConfig(value: any): value is ItemsConfig {
+    return (
+      value &&
+      typeof value === "object" &&
+      typeof value.Name === "string" &&
+      value.Rows &&
+      typeof value.Rows.start === "number" &&
+      typeof value.Rows.end === "number" &&
+      value.Columns &&
+      typeof value.Columns === "object"
+    );
   }
 
   /**

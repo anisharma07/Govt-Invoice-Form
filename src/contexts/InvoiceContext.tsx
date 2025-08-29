@@ -6,15 +6,16 @@ import React, {
   ReactNode,
 } from "react";
 import { Local } from "../components/Storage/LocalStorage";
+import { TemplateData, DATA } from "../templates";
 
 interface InvoiceContextType {
   selectedFile: string;
   billType: number;
   store: Local;
-  activeTempId: number;
+  activeTemplateData: TemplateData | null;
   updateSelectedFile: (fileName: string) => void;
   updateBillType: (type: number) => void;
-  updateActiveTempId: (tempId: number) => void;
+  updateActiveTemplateData: (templateData: TemplateData | null) => void;
   resetToDefaults: () => void;
 }
 
@@ -37,7 +38,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
 }) => {
   const [selectedFile, setSelectedFile] = useState<string>("default");
   const [billType, setBillType] = useState<number>(1);
-  const [activeTempId, setActiveTempId] = useState<number>(1);
+  const [activeTemplateData, setActiveTemplateData] = useState<TemplateData | null>(null);
   const [store] = useState(() => new Local());
 
   // Load persisted state from localStorage on mount
@@ -45,7 +46,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
     try {
       const savedFile = localStorage.getItem("stark-invoice-selected-file");
       const savedBillType = localStorage.getItem("stark-invoice-bill-type");
-      const savedActiveTempId = localStorage.getItem("stark-invoice-active-temp-id");
+      const savedActiveTemplateId = localStorage.getItem("stark-invoice-active-template-id");
 
       if (savedFile) {
         setSelectedFile(savedFile);
@@ -55,8 +56,12 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
         setBillType(parseInt(savedBillType, 10));
       }
 
-      if (savedActiveTempId) {
-        setActiveTempId(parseInt(savedActiveTempId, 10));
+      if (savedActiveTemplateId) {
+        const templateId = parseInt(savedActiveTemplateId, 10);
+        const templateData = DATA[templateId];
+        if (templateData) {
+          setActiveTemplateData(templateData);
+        }
       }
     } catch (error) {
       console.warn("Failed to load invoice state from localStorage:", error);
@@ -82,11 +87,15 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
 
   useEffect(() => {
     try {
-      localStorage.setItem("stark-invoice-active-temp-id", activeTempId.toString());
+      if (activeTemplateData) {
+        localStorage.setItem("stark-invoice-active-template-id", activeTemplateData.templateId.toString());
+      } else {
+        localStorage.removeItem("stark-invoice-active-template-id");
+      }
     } catch (error) {
-      console.warn("Failed to save active temp id to localStorage:", error);
+      console.warn("Failed to save active template id to localStorage:", error);
     }
-  }, [activeTempId]);
+  }, [activeTemplateData]);
 
   const updateSelectedFile = (fileName: string) => {
     setSelectedFile(fileName);
@@ -96,24 +105,24 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
     setBillType(type);
   };
 
-  const updateActiveTempId = (tempId: number) => {
-    setActiveTempId(tempId);
+  const updateActiveTemplateData = (templateData: TemplateData | null) => {
+    setActiveTemplateData(templateData);
   };
 
   const resetToDefaults = () => {
     setSelectedFile("default");
     setBillType(1);
-    setActiveTempId(1);
+    setActiveTemplateData(null);
   };
 
   const value: InvoiceContextType = {
     selectedFile,
     billType,
     store,
-    activeTempId,
+    activeTemplateData,
     updateSelectedFile,
     updateBillType,
-    updateActiveTempId,
+    updateActiveTemplateData,
     resetToDefaults,
   };
 

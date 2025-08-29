@@ -16,7 +16,7 @@ import {
   IonToast,
 } from '@ionic/react';
 import { documentText, folder, download, create, trash } from 'ionicons/icons';
-import { Local, File, TemplateMetadata } from './Storage/LocalStorage';
+import { Local, File } from './Storage/LocalStorage';
 import { TemplateManager } from '../utils/templateManager';
 import { TemplateInitializer } from '../utils/templateInitializer';
 
@@ -74,14 +74,14 @@ const TemplateFiles: React.FC<TemplateFilesProps> = ({ onFileSelect, onFileCreat
   };
 
   const getTemplateInfo = (templateId: number) => {
-    const metadata = TemplateInitializer.getTemplateMetadata(templateId);
-    return metadata ? metadata.template : `Template ${templateId}`;
+    const templateData = TemplateInitializer.getTemplateData(templateId);
+    return templateData ? templateData.template : `Template ${templateId}`;
   };
 
   const handleFileCreate = async (templateId: number) => {
     try {
-      const metadata = TemplateInitializer.getTemplateMetadata(templateId);
-      if (!metadata) {
+      const templateData = TemplateInitializer.getTemplateData(templateId);
+      if (!templateData) {
         setToastMessage('Template not found');
         return;
       }
@@ -99,13 +99,13 @@ const TemplateFiles: React.FC<TemplateFilesProps> = ({ onFileSelect, onFileCreat
         mscContent,
         fileName,
         templateId,
-        metadata,
+        templateId,
         false
       );
 
       await local._saveFile(newFile);
       await loadFiles();
-      setToastMessage(`File created with ${metadata.template}`);
+      setToastMessage(`File created with ${templateData.template}`);
       
       if (onFileCreate) {
         onFileCreate(templateId);
@@ -127,8 +127,8 @@ const TemplateFiles: React.FC<TemplateFilesProps> = ({ onFileSelect, onFileCreat
     }
   };
 
-  const getFileTemplateInfo = (fileData: any): TemplateMetadata | null => {
-    return fileData.templateMetadata || null;
+  const getFileTemplateInfo = (fileData: any): number | null => {
+    return fileData.templateId || null;
   };
 
   const filteredFiles = getFilteredFiles();
@@ -186,7 +186,8 @@ const TemplateFiles: React.FC<TemplateFilesProps> = ({ onFileSelect, onFileCreat
           ) : (
             <IonList>
               {Object.entries(filteredFiles).map(([fileName, fileData]) => {
-                const templateMetadata = getFileTemplateInfo(fileData);
+                const templateId = getFileTemplateInfo(fileData);
+                const templateData = templateId ? TemplateInitializer.getTemplateData(templateId) : null;
                 return (
                   <IonItem key={fileName}>
                     <IonIcon icon={documentText} slot="start" />
@@ -198,14 +199,14 @@ const TemplateFiles: React.FC<TemplateFilesProps> = ({ onFileSelect, onFileCreat
                           <> • Modified: {new Date(fileData.modified).toLocaleDateString()}</>
                         )}
                       </div>
-                      {templateMetadata && (
+                      {templateData && (
                         <div style={{ marginTop: '4px' }}>
                           <IonChip color="primary" outline>
-                            {templateMetadata.template}
+                            {templateData.template}
                           </IonChip>
-                          {templateMetadata.footers.length > 0 && (
+                          {templateData.footers.length > 0 && (
                             <IonChip color="secondary" outline>
-                              {templateMetadata.footers.length} footer(s)
+                              {templateData.footers.length} footer(s)
                             </IonChip>
                           )}
                           {fileData.isEncrypted && (
@@ -218,7 +219,7 @@ const TemplateFiles: React.FC<TemplateFilesProps> = ({ onFileSelect, onFileCreat
                     </div>
                     <IonButton
                       fill="clear"
-                      onClick={() => onFileSelect && onFileSelect(fileName, templateMetadata?.templateId || 1)}
+                      onClick={() => onFileSelect && onFileSelect(fileName, templateId || 1)}
                     >
                       <IonIcon icon={download} />
                     </IonButton>

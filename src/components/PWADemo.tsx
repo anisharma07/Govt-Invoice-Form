@@ -53,7 +53,7 @@ const PWADemo: React.FC = () => {
       const data = await getAllInvoices();
       setOfflineData(data);
     } catch (error) {
-      console.error("Error loading offline data:", error);
+      // Error loading offline data
     }
   };
 
@@ -85,7 +85,7 @@ const PWADemo: React.FC = () => {
     //     icon: '/pwa-192x192.png'
     //   });
     // }
-    console.log("Notification functionality disabled");
+    // Notification functionality disabled
   };
 
   return (

@@ -1,20 +1,8 @@
 #container {
-  max-height: 100vh;
-  /* position: relative; */
-  /* border: #eb24fd; */
-  /* border: 10px solid #eb24fd; */
-  /* border-width: 20px; */
-  /* margin: 100px; */
-  /* height: min-content; */
-  /* overflow: auto; */
-  /* position: relative; */
-  /* width: 100%; */
-  /* min-height: 400px; */
-  /* Add smooth scrolling behavior */
-  /* scroll-behavior: smooth; */
-  /* Ensure proper scroll on mobile devices */
-  /* -webkit-overflow-scrolling: touch; */
+  height: min-content;
+  overflow: hidden;
 }
+
 #container,
 #workbookControl,
 #tableeditor,
@@ -23,8 +11,32 @@
   max-height: 100vh;
   /* overflow: hidden; */
 }
-#tableeditor{
+#tableeditor {
   height: 100vh;
+}
+
+/* Remove bottom padding from Home page content */
+ion-page ion-content {
+  --padding-bottom: 0px !important;
+  padding-bottom: 0px !important;
+}
+
+/* SocialCalc specific fixes */
+#te_griddiv {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Force SocialCalc container to not have extra bottom space */
+.SocialCalc-spreadsheet {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Ensure the spreadsheet control fills available space properly */
+#tableeditor > div {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
 }
 /* Dark mode fixes for Home page */
 .dark-theme ion-page {
@@ -711,4 +723,18 @@ ion-content {
 
 ion-fab[vertical="bottom"][horizontal="end"] {
   position: fixed !important;
+}
+
+/* Spin animation for auto-save indicator */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-animation {
+  animation: spin 1.5s linear infinite;
 }

@@ -22,14 +22,12 @@ import {
   IonToast,
   IonItemDivider,
   IonTextarea,
-  IonFab,
-  IonFabButton,
   IonSelect,
   IonSelectOption,
   IonChip,
 } from "@ionic/react";
-import { close, save, add, trash, layers } from "ionicons/icons";
-import { DATA, TemplateData } from "../templates";
+import { close, save, trash, layers } from "ionicons/icons";
+import { TemplateData } from "../templates";
 import { useInvoice } from "../contexts/InvoiceContext";
 import {
   addInvoiceData,
@@ -134,8 +132,9 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
         onClose();
       }, 1500);
     } catch (error) {
-      console.error("Error saving invoice data:", error);
-      showToastMessage("Failed to save invoice data", "danger");
+      setToastMessage("Failed to save invoice data. Please try again.");
+      setToastColor("danger");
+      setShowToast(true);
     }
   };
 
@@ -147,7 +146,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
       setFormData(initData);
       showToastMessage("Form data cleared successfully!", "success");
     } catch (error) {
-      console.error("Error clearing form data:", error);
       showToastMessage("Failed to clear form data", "danger");
     }
   };

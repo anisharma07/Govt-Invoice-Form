@@ -62,6 +62,8 @@ interface FileOptionsProps {
   setShowActionsPopover: (show: boolean) => void;
   showColorModal: boolean;
   setShowColorPicker: (show: boolean) => void;
+  onSave?: () => Promise<void>;
+  isAutoSaveEnabled?: boolean;
 }
 
 const FileOptions: React.FC<FileOptionsProps> = ({
@@ -69,6 +71,8 @@ const FileOptions: React.FC<FileOptionsProps> = ({
   setShowActionsPopover,
   showColorModal,
   setShowColorPicker,
+  onSave,
+  isAutoSaveEnabled = false,
 }) => {
   const { isDarkMode } = useTheme();
   const [showToast, setShowToast] = useState(false);
@@ -97,10 +101,22 @@ const FileOptions: React.FC<FileOptionsProps> = ({
     selectedFile,
     store,
     billType,
+    activeTemplateData,
     updateSelectedFile,
     updateBillType,
     resetToDefaults,
   } = useInvoice();
+
+  // Helper function to trigger save if autosave is enabled
+  const triggerAutoSave = async () => {
+    if (isAutoSaveEnabled && onSave) {
+      try {
+        await onSave();
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+      }
+    }
+  };
 
   // Load saved logos and signatures on component mount
   useEffect(() => {
@@ -129,16 +145,49 @@ const FileOptions: React.FC<FileOptionsProps> = ({
     setShowLogoModal(true);
   };
 
-  const handleSelectLogo = (logo: {
+  const handleSelectLogo = async (logo: {
     id: string;
     name: string;
     data: string;
   }) => {
-    const logoCoordinates = AppGeneral.getLogoCoordinates();
-    AppGeneral.addLogo(logoCoordinates, logo.data);
-    setToastMessage(`Logo applied successfully!`);
-    setShowToast(true);
-    setShowLogoModal(false);
+    if (!activeTemplateData) {
+      setToastMessage("No active template data available");
+      setShowToast(true);
+      return;
+    }
+
+    const logoCell = activeTemplateData.logoCell;
+    const currentSheetId = activeTemplateData.msc.currentid;
+    let logoCoordinate: string;
+
+    if (typeof logoCell === "string") {
+      logoCoordinate = logoCell;
+    } else if (logoCell && logoCell[currentSheetId]) {
+      logoCoordinate = logoCell[currentSheetId];
+    } else {
+      setToastMessage("Logo position not available for current sheet");
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      // Create coordinates object for the current sheet
+      const logoCoordinates = {
+        [currentSheetId]: logoCoordinate,
+      };
+
+      AppGeneral.addLogo(logoCoordinates, logo.data);
+      setToastMessage(`Logo applied successfully!`);
+      setShowToast(true);
+      setShowLogoModal(false);
+
+      // Trigger auto-save if enabled
+      await triggerAutoSave();
+    } catch (error) {
+      console.error("Error applying logo:", error);
+      setToastMessage("Failed to apply logo");
+      setShowToast(true);
+    }
   };
 
   // Local storage functions for signatures
@@ -230,60 +279,6 @@ const FileOptions: React.FC<FileOptionsProps> = ({
     setShowSaveAsAlert(true);
   };
 
-  const doSave = async () => {
-    try {
-      setToastMessage("Saving...");
-      setShowToast(true);
-
-      const content = AppGeneral.getSpreadsheetContent();
-
-      if (selectedFile === "default") {
-        // Save as new file
-        const now = new Date().toISOString();
-        const filename = "Untitled-" + formatDateForFilename(new Date());
-        const file = new File(
-          now,
-          now,
-          encodeURIComponent(content),
-          filename,
-          1
-        );
-        await store._saveFile(file);
-        updateSelectedFile(filename);
-        setToastMessage("File saved as " + filename);
-      } else {
-        // Update existing file
-        const existingFile = await store._getFile(selectedFile);
-        const now = new Date().toISOString();
-        const updatedFile = new File(
-          existingFile.created,
-          now,
-          encodeURIComponent(content),
-          selectedFile,
-          existingFile.billType,
-          existingFile.isEncrypted
-        );
-        await store._saveFile(updatedFile);
-        setToastMessage("File saved successfully!");
-      }
-      setShowToast(true);
-    } catch (error) {
-      console.error("Error saving file:", error);
-
-      if (isQuotaExceededError(error)) {
-        setToastMessage(getQuotaExceededMessage("saving file"));
-      } else {
-        setToastMessage("Failed to save file. Please try again.");
-      }
-      setShowToast(true);
-    }
-  };
-
-  const handleSave = () => {
-    setShowActionsPopover(false);
-    doSave();
-  };
-
   const handleNewFileClick = async () => {
     try {
       setShowActionsPopover(false);
@@ -366,20 +361,88 @@ const FileOptions: React.FC<FileOptionsProps> = ({
     return "A1";
   };
 
-  const handleRemoveLogo = () => {
+  const handleRemoveLogo = async () => {
     setShowActionsPopover(false);
-    const logoCoordinates = AppGeneral.getLogoCoordinates();
-    AppGeneral.removeLogo(logoCoordinates);
-    setToastMessage("Logo removed successfully!");
-    setShowToast(true);
+
+    if (!activeTemplateData) {
+      setToastMessage("No active template data available");
+      setShowToast(true);
+      return;
+    }
+
+    const logoCell = activeTemplateData.logoCell;
+    const currentSheetId = activeTemplateData.msc.currentid;
+    let logoCoordinate: string;
+
+    if (typeof logoCell === "string") {
+      logoCoordinate = logoCell;
+    } else if (logoCell && logoCell[currentSheetId]) {
+      logoCoordinate = logoCell[currentSheetId];
+    } else {
+      setToastMessage("Logo position not available for current sheet");
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      // Create coordinates object for the current sheet
+      const logoCoordinates = {
+        [currentSheetId]: logoCoordinate,
+      };
+
+      AppGeneral.removeLogo(logoCoordinates);
+      setToastMessage("Logo removed successfully!");
+      setShowToast(true);
+
+      // Trigger auto-save if enabled
+      await triggerAutoSave();
+    } catch (error) {
+      console.error("Error removing logo:", error);
+      setToastMessage("Failed to remove logo");
+      setShowToast(true);
+    }
   };
 
-  const handleRemoveSignature = () => {
+  const handleRemoveSignature = async () => {
     setShowActionsPopover(false);
-    const signatureCoordinates = AppGeneral.getSignatureCoordinates();
-    AppGeneral.removeLogo(signatureCoordinates);
-    setToastMessage("Signature removed successfully!");
-    setShowToast(true);
+
+    if (!activeTemplateData) {
+      setToastMessage("No active template data available");
+      setShowToast(true);
+      return;
+    }
+
+    const signatureCell = activeTemplateData.signatureCell;
+    const currentSheetId = activeTemplateData.msc.currentid;
+    let signatureCoordinate: string;
+
+    if (typeof signatureCell === "string") {
+      signatureCoordinate = signatureCell;
+    } else if (signatureCell && signatureCell[currentSheetId]) {
+      signatureCoordinate = signatureCell[currentSheetId];
+    } else {
+      setToastMessage("Signature position not available for current sheet");
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      // Create coordinates object for the current sheet
+      const signatureCoordinates = {
+        [currentSheetId]: signatureCoordinate,
+      };
+
+      AppGeneral.removeLogo(signatureCoordinates);
+      setToastMessage("Signature removed successfully!");
+      setShowToast(true);
+
+      // Trigger auto-save if enabled
+      await triggerAutoSave();
+    } catch (error) {
+      console.error("Error removing signature:", error);
+      setToastMessage("Failed to remove signature");
+      setShowToast(true);
+    }
   };
 
   // Signature management functions
@@ -390,16 +453,49 @@ const FileOptions: React.FC<FileOptionsProps> = ({
     setShowSignatureModal(true);
   };
 
-  const handleSelectSignature = (signature: {
+  const handleSelectSignature = async (signature: {
     id: string;
     name: string;
     data: string;
   }) => {
-    const signatureCoordinates = AppGeneral.getSignatureCoordinates();
-    AppGeneral.addLogo(signatureCoordinates, signature.data);
-    setToastMessage(`Signature applied successfully!`);
-    setShowToast(true);
-    setShowSignatureModal(false);
+    if (!activeTemplateData) {
+      setToastMessage("No active template data available");
+      setShowToast(true);
+      return;
+    }
+
+    const signatureCell = activeTemplateData.signatureCell;
+    const currentSheetId = activeTemplateData.msc.currentid;
+    let signatureCoordinate: string;
+
+    if (typeof signatureCell === "string") {
+      signatureCoordinate = signatureCell;
+    } else if (signatureCell && signatureCell[currentSheetId]) {
+      signatureCoordinate = signatureCell[currentSheetId];
+    } else {
+      setToastMessage("Signature position not available for current sheet");
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      // Create coordinates object for the current sheet
+      const signatureCoordinates = {
+        [currentSheetId]: signatureCoordinate,
+      };
+
+      AppGeneral.addLogo(signatureCoordinates, signature.data);
+      setToastMessage(`Signature applied successfully!`);
+      setShowToast(true);
+      setShowSignatureModal(false);
+
+      // Trigger auto-save if enabled
+      await triggerAutoSave();
+    } catch (error) {
+      console.error("Error applying signature:", error);
+      setToastMessage("Failed to apply signature");
+      setShowToast(true);
+    }
   };
 
   return (
@@ -418,11 +514,6 @@ const FileOptions: React.FC<FileOptionsProps> = ({
             <IonItem button onClick={handleNewFileClick}>
               <IonIcon icon={addOutline} slot="start" />
               <IonLabel>New</IonLabel>
-            </IonItem>
-
-            <IonItem button onClick={handleSave}>
-              <IonIcon icon={saveOutline} slot="start" />
-              <IonLabel>Save</IonLabel>
             </IonItem>
 
             <IonItem button onClick={handleSaveAs}>

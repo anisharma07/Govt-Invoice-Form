@@ -103,7 +103,6 @@ const Menu: React.FC<{
         setToastMessage("Print job sent successfully!");
         setShowToast1(true);
       } catch (error) {
-        console.error("Print error:", error);
         setToastMessage(
           "Failed to print. Please check if a printer is available."
         );
@@ -126,7 +125,6 @@ const Menu: React.FC<{
 
       // Get the current HTML content from the spreadsheet
       const htmlContent = AppGeneral.getCurrentHTMLContent();
-      console.log(htmlContent);
 
       if (!htmlContent || htmlContent.trim() === "") {
         setToastMessage("No content available to export as PDF");
@@ -179,8 +177,7 @@ const Menu: React.FC<{
                 setToastMessage(`PDF generated and ready to share!`);
                 setShowToast1(true);
               } catch (shareError) {
-                console.log("Error sharing PDF:", shareError);
-                // Fallback: still generate PDF normally
+                // Error sharing PDF, fallback: still generate PDF normally
                 await exportHTMLAsPDF(htmlContent, {
                   filename: pdfFilename,
                   format: "a4",
@@ -197,8 +194,7 @@ const Menu: React.FC<{
             };
             reader.readAsDataURL(pdfBlob as Blob);
           } catch (error) {
-            console.error("Error processing PDF for sharing:", error);
-            // Fallback to normal PDF generation
+            // Error processing PDF for sharing, fallback to normal PDF generation
             await exportHTMLAsPDF(htmlContent, {
               filename: pdfFilename,
               format: "a4",
@@ -230,7 +226,6 @@ const Menu: React.FC<{
         setShowToast1(true);
       }
     } catch (error) {
-      console.error("Error generating PDF:", error);
       setToastMessage("Failed to generate PDF. Please try again.");
       setShowToast1(true);
     } finally {

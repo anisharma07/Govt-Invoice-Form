@@ -15,33 +15,20 @@ import {
   IonItem,
   IonLabel,
   IonList,
-  IonToggle,
-  IonInput,
   IonModal,
   IonToast,
   IonGrid,
   IonRow,
   IonCol,
-  IonSelect,
-  IonSelectOption,
   IonRange,
   IonPopover,
+  IonToggle,
 } from "@ionic/react";
 import {
   saveOutline,
-  cloudUpload,
-  save,
-  print,
-  mail,
   settings,
   informationCircle,
-  moon,
-  sunny,
-  card,
-  alertCircle,
   createOutline,
-  trashOutline,
-  colorPaletteOutline,
   add,
   checkmark,
   pencil,
@@ -49,34 +36,19 @@ import {
   cloudUploadOutline,
   imageOutline,
   downloadOutline,
-  notifications,
   wifiOutline,
   cloudOfflineOutline,
-  cloudDoneOutline,
-  refreshOutline,
-  bug,
   arrowBack,
+  flash,
 } from "ionicons/icons";
 import SignatureCanvas from "react-signature-canvas";
 import Menu from "../components/Menu/Menu";
-import { Local } from "../components/Storage/LocalStorage";
 import { useTheme } from "../contexts/ThemeContext";
-import { useInvoice } from "../contexts/InvoiceContext";
 import { useHistory } from "react-router-dom";
-import PWAInstallPrompt from "../components/PWAInstallPrompt";
-import PWADemo from "../components/PWADemo";
-// import { usePushNotifications } from "../utils/pushNotifications";
 import { usePWA } from "../hooks/usePWA";
 import { resetUserOnboarding } from "../utils/helper";
+import { getAutoSaveEnabled, setAutoSaveEnabled } from "../utils/settings";
 import "./SettingsPage.css";
-// import {
-//   cloudService,
-//   ServerFile,
-//   LoginCredentials,
-//   RegisterCredentials,
-// } from "../services/cloud-service";
-// import { useAccount, useConnect, useDisconnect } from "@starknet-react/core";
-// import { useGetUserFileLimits } from "../hooks/useContractRead";
 
 const SettingsPage: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
@@ -86,13 +58,8 @@ const SettingsPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showResetToast, setShowResetToast] = useState(false);
+  const [globalAutoSaveEnabled, setGlobalAutoSaveEnabled] = useState(getAutoSaveEnabled());
 
-  // PWA features
-  // Push notifications disabled in local-only mode
-  // const { requestPermission, subscribe, getPermissionState } =
-  //   usePushNotifications();
-  const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermission>("default");
   const { isInstallable, isInstalled, isOnline, installApp } = usePWA();
 
   // Signature state
@@ -147,7 +114,7 @@ const SettingsPage: React.FC = () => {
         const signatures = JSON.parse(saved);
         setSavedSignatures(signatures);
       } catch (error) {
-        console.error("Error parsing saved signatures:", error);
+        // Error parsing saved signatures, use empty array
         setSavedSignatures([]);
       }
     }
@@ -167,7 +134,7 @@ const SettingsPage: React.FC = () => {
         const logos = JSON.parse(saved);
         setSavedLogos(logos);
       } catch (error) {
-        console.error("Error parsing saved logos:", error);
+        // Error parsing saved logos, use empty array
         setSavedLogos([]);
       }
     }
@@ -391,7 +358,6 @@ const SettingsPage: React.FC = () => {
         setShowToast(true);
       }
     } catch (error) {
-      console.error("Error saving signature:", error);
       setToastMessage("Error saving signature. Please try again.");
       setShowToast(true);
     }
@@ -617,7 +583,6 @@ const SettingsPage: React.FC = () => {
       setToastMessage("Signature uploaded successfully!");
       setShowToast(true);
     } catch (error) {
-      console.error("Error saving uploaded signature:", error);
       setToastMessage("Error saving signature. Please try again.");
       setShowToast(true);
     }
@@ -651,7 +616,6 @@ const SettingsPage: React.FC = () => {
       setToastMessage("Logo saved successfully");
       setShowToast(true);
     } catch (error) {
-      console.error("Error saving logo:", error);
       setToastMessage("Error saving logo. Please try again.");
       setShowToast(true);
     }
@@ -811,7 +775,6 @@ const SettingsPage: React.FC = () => {
       setSelectedLogoFile(null);
       setLogoUploadPreview(null);
     } catch (error) {
-      console.error("Error saving uploaded logo:", error);
       setToastMessage("Error saving logo. Please try again.");
       setShowToast(true);
     }
@@ -847,6 +810,13 @@ const SettingsPage: React.FC = () => {
   const handleResetOnboarding = () => {
     resetUserOnboarding();
     setShowResetToast(true);
+  };
+
+  const handleAutoSaveToggle = (enabled: boolean) => {
+    setGlobalAutoSaveEnabled(enabled);
+    setAutoSaveEnabled(enabled);
+    setToastMessage(`Auto-save ${enabled ? 'enabled' : 'disabled'} by default for new files`);
+    setShowToast(true);
   };
 
   React.useEffect(() => {
@@ -914,6 +884,18 @@ const SettingsPage: React.FC = () => {
               </IonCardHeader>
               <IonCardContent>
                 <IonList>
+                  <IonItem>
+                    <IonIcon icon={flash} slot="start" />
+                    <IonLabel>
+                      <h3>Auto-save by Default</h3>
+                      <p>Enable auto-save for newly opened files</p>
+                    </IonLabel>
+                    <IonToggle
+                      slot="end"
+                      checked={globalAutoSaveEnabled}
+                      onIonChange={(e) => handleAutoSaveToggle(e.detail.checked)}
+                    />
+                  </IonItem>
                   <IonItem button onClick={handleResetOnboarding}>
                     <IonIcon icon={informationCircle} slot="start" />
                     <IonLabel>

@@ -51,10 +51,10 @@ export interface TemplateData {
     index: number;
     isActive: boolean;
   }[];
-  logoCell: string | { [footerIndex: number]: string };
-  signatureCell: string | { [footerIndex: number]: string };
+  logoCell: string | { [sheetName: string]: string };
+  signatureCell: string | { [sheetName: string]: string };
   cellMappings: {
-    [footerIndex: number]: CellMapping;
+    [sheetName: string]: CellMapping;
   };
 }
 
@@ -64,13 +64,13 @@ export let DATA: { [key: number]: TemplateData } = {
     templateId: 1001,
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
-      1: "F5",
+      sheet1: "F5",
     },
     signatureCell: {
-      1: "D38",
+      sheet1: "D38",
     },
     cellMappings: {
-      1: {
+      sheet1: {
         Heading: "B2",
         Items: {
           Name: "Items",
@@ -219,13 +219,13 @@ export let DATA: { [key: number]: TemplateData } = {
     templateId: 1002,
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
-      1: "F7",
+      sheet1: "F7",
     },
     signatureCell: {
-      1: "E41",
+      sheet1: "E41",
     },
     cellMappings: {
-      1: {
+      sheet1: {
         Heading: "B2",
         Items: {
           Name: "Items",
@@ -268,10 +268,10 @@ export let DATA: { [key: number]: TemplateData } = {
 
     msc: {
       numsheets: 1,
-      currentid: "sheet2",
+      currentid: "sheet1",
       currentname: "inv2",
       sheetArr: {
-        sheet2: {
+        sheet1: {
           sheetstr: {
             savestr:
               "version:1.5\ncell:B2:t:INVOICE:l:1:f:9:cf:1:colspan:6\ncell:C2:t::l:2:f:13\ncell:D2:t::l:2:f:13\ncell:E2:l:1:f:10:c:2:cf:3\ncell:F2:t:INVOICE:l:1:f:8:c:2:cf:2:colspan:2\ncell:G2:t::l:2:f:13\ncell:B3:f:6:cf:2:colspan:4\ncell:C3:t::l:2:f:13\ncell:D3:t::l:2:f:13\ncell:F3:l:1:f:7:cf:2\ncell:G3:l:1:f:14:cf:2:ntvf:3\ncell:B4:f:2:colspan:2\ncell:F4:t:DATE\\c:l:1:f:14:cf:2\ncell:G4:vtf:nd:45898:TODAY():l:1:f:14:cf:2:ntvf:3\ncell:B5:t:INVOICE #\\c:f:3:colspan:6\ncell:C5:cf:2:colspan:5\ncell:F5:l:1:f:7:cf:2:colspan:2\ncell:G5:l:1:f:14:cf:2\ncell:B6:f:2:colspan:2\ncell:F6:l:1:f:7:cf:2:colspan:2\ncell:G6:l:1:f:14:cf:2\ncell:B7:t:FROM\\c:f:12\ncell:F7:l:1:f:7:cf:2:tvf:4:colspan:2:rowspan:6\ncell:G7:l:1:f:14:cf:2\ncell:B8:t:[Company Name]:f:3:colspan:4\ncell:F8:l:1:f:7:cf:2:colspan:2\ncell:G8:l:1:f:14:cf:2\ncell:B9:t:[Street Address]:f:1:cf:2:colspan:4\ncell:F9:l:1:f:7\ncell:G9:l:1:f:14:cf:1\ncell:B10:t:[City, State,  Zip]:f:1:cf:2:colspan:4\ncell:G10:l:1:f:13\ncell:B11:t:Phone\\c :f:1:cf:2:colspan:4\ncell:B12:t:Email\\c:f:1:cf:2:colspan:4\ncell:B13:colspan:2\ncell:B14:t:BILL TO\\c:f:11:cf:2\ncell:B15:t:[Name]:f:1:cf:2:colspan:6\ncell:B16:t:[Company Name]:f:1:cf:2:colspan:6\ncell:F16:t:  \ncell:B17:t:[Street Address]:f:1:cf:2:colspan:6\ncell:B18:t:[City, State,  Zip]:f:1:cf:2:colspan:6\ncell:B19:t:Phone\\c :f:1:cf:2:colspan:6\ncell:B20:t:Email\\c:f:1:cf:2:colspan:6\ncell:A22:b::1::\ncell:B22:t:DESCRIPTION:b:1:1:1:1:l:1:f:14:c:1:bg:3:cf:1:colspan:5:rowspan:1\ncell:C22:t::l:2:f:13\ncell:D22:t::l:2:f:13\ncell:E22:t::l:2:f:13\ncell:F22:t::l:2:f:13\ncell:G22:t:AMOUNT:b:1:1:1::l:1:f:14:c:1:bg:3:cf:1\ncell:A23:b::1::\ncell:B23:b:1:1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C23:t::l:2:f:4\ncell:D23:t::l:2:f:4\ncell:E23:t::l:2:f:4\ncell:F23:t::b::2:::l:1:f:4\ncell:G23:b::1::1:f:4:ntvf:1\ncell:A24:b::1::\ncell:B24:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C24:t::l:2:f:4\ncell:D24:t::l:2:f:4\ncell:E24:t::l:2:f:4\ncell:F24:t::b::2:::l:1:f:4\ncell:G24:b::1::1:f:4:ntvf:1\ncell:A25:b::1::\ncell:B25:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C25:t::l:2:f:4\ncell:D25:t::l:2:f:4\ncell:E25:t::l:2:f:4\ncell:F25:t::b::2:::l:1:f:4\ncell:G25:b::1::1:f:4:ntvf:1\ncell:A26:b::1::\ncell:B26:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C26:t::l:2:f:4\ncell:D26:t::l:2:f:4\ncell:E26:t::l:2:f:4\ncell:F26:t::b::2:::l:1:f:4\ncell:G26:b::1::1:f:4:ntvf:1\ncell:A27:b::1::\ncell:B27:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C27:t::l:2:f:4\ncell:D27:t::l:2:f:4\ncell:E27:t::l:2:f:4\ncell:F27:t::b::2:::l:1:f:4\ncell:G27:b::1::1:f:4:ntvf:1\ncell:A28:b::1::\ncell:B28:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C28:t::l:2:f:4\ncell:D28:t::l:2:f:4\ncell:E28:t::l:2:f:4\ncell:F28:t::b::2:::l:1:f:4\ncell:G28:b::1::1:f:4:ntvf:1\ncell:A29:b::1::\ncell:B29:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C29:t::l:2:f:4\ncell:D29:t::l:2:f:4\ncell:E29:t::l:2:f:4\ncell:F29:t::b::2:::l:1:f:4\ncell:G29:b::1::1:f:4:ntvf:1\ncell:A30:b::1::\ncell:B30:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C30:t::l:2:f:4\ncell:D30:t::l:2:f:4\ncell:E30:t::l:2:f:4\ncell:F30:t::b::2:::l:1:f:4\ncell:G30:b::1::1:f:4:ntvf:1\ncell:A31:b::1::\ncell:B31:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C31:t::l:2:f:4\ncell:D31:t::l:2:f:4\ncell:E31:t::l:2:f:4\ncell:F31:t::b::2:::l:1:f:4\ncell:G31:b::1::1:f:4:ntvf:1\ncell:A32:b::1::\ncell:B32:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C32:t::l:2:f:4\ncell:D32:t::l:2:f:4\ncell:E32:t::l:2:f:4\ncell:F32:t::b::2:::l:1:f:4\ncell:G32:b::1::1:f:4:ntvf:1\ncell:A33:b::1::\ncell:B33:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C33:t::l:2:f:4\ncell:D33:t::l:2:f:4\ncell:E33:t::l:2:f:4\ncell:F33:t::b::2:::l:1:f:4\ncell:G33:b::1::1:f:4:ntvf:1\ncell:A34:b::1::\ncell:B34:b::1::1:f:4:cf:2:colspan:5:rowspan:1\ncell:C34:l:2:f:4\ncell:D34:l:2:f:4\ncell:E34:l:2:f:4\ncell:F34:b::2:::l:1:f:4\ncell:G34:b::1::1:f:4:ntvf:1\ncell:A35:b::1::\ncell:B35:b::1:1:1:f:4:cf:2:colspan:5:rowspan:1\ncell:C35:t::b:::2::l:1:f:4\ncell:D35:t::b:::2::l:1:f:4\ncell:E35:t::b:::2::l:1:f:4\ncell:F35:t::b::2:2::l:1:f:4\ncell:G35:b::1:1:1:f:4:ntvf:1\ncell:B36:b:2::::l:1:f:13\ncell:C36:b:2::::l:1:f:13\ncell:D36:b:2::::l:1:f:13\ncell:E36:b:2::::l:1:f:14\ncell:F36:t:Subtotal:b:2::::l:1:f:11\ncell:G36:vtf:n:0:SUM(G23\\cG35):b:1::::f:11:ntvf:1\ncell:B37:t:NOTES:b:::1::l:1:f:14:cf:2:colspan:3:rowspan:1\ncell:C37:t::b:::2::l:1:f:13\ncell:D37:t::b:::2::l:1:f:13\ncell:F37:t:Tax Rate:l:1:f:11\ncell:G37:v:0:f:1:ntvf:2\ncell:B38:b:1::::f:1:cf:2:colspan:3\ncell:C38:t::b:2::::l:1:f:13\ncell:D38:t::b:2::::l:1:f:13\ncell:F38:t:Tax:l:1:f:11\ncell:G38:vtf:n:0:G37*G36:f:1:ntvf:1\ncell:B39:f:1:cf:2:colspan:3\ncell:C39:t::l:2:f:13\ncell:D39:t::l:2:f:13\ncell:F39:t:Other:b:::1::l:1:f:11\ncell:G39:v:0:b:::1::f:1:ntvf:1\ncell:B40:b:::1::f:1:cf:2:colspan:3:rowspan:1\ncell:C40:t::l:2:f:13\ncell:D40:t::l:2:f:13\ncell:F40:t:TOTAL:b:1::::l:1:f:14\ncell:G40:vtf:n:0:(G36+G38)+G39:b:1::::f:11:ntvf:1\ncell:E41:colspan:3:rowspan:3\ncell:E42:colspan:3:rowspan:2\ncell:B43:l:1:f:5:cf:1\ncell:C43:t::l:2:f:13\ncell:D43:t::l:2:f:13\ncell:E43:t::l:2:f:13\ncell:F43:t::l:2:f:13\ncell:G43:t::l:2:f:13\ncol:A:w:10\ncol:B:w:90\ncol:C:w:19\ncol:D:w:10\ncol:E:w:16\ncol:F:w:45\ncol:G:w:64\nrow:1:h:34.5\nrow:2:h:34.5\nrow:3:h:14.25\nrow:4:h:14.25\nrow:5:h:14.25\nrow:6:h:14.25\nrow:7:h:14.25\nrow:8:h:14.25\nrow:9:h:14.25\nrow:10:h:14.25\nrow:11:h:14.25\nrow:12:h:14.25\nrow:14:h:14.25\nrow:15:h:14.25\nrow:16:h:14.25\nrow:17:h:14.25\nrow:18:h:14.25\nrow:19:h:14.25\nrow:22:h:14.25\nrow:23:h:14.25\nrow:24:h:14.25\nrow:25:h:14.25\nrow:26:h:14.25\nrow:27:h:14.25\nrow:28:h:14.25\nrow:29:h:14.25\nrow:30:h:14.25\nrow:31:h:14.25\nrow:32:h:14.25\nrow:33:h:14.25\nrow:34:h:14.25\nrow:35:h:14.25\nrow:36:h:14.25\nrow:37:h:14.25\nrow:38:h:14.25\nrow:39:h:14.25\nrow:40:h:14.25\nrow:43:h:15.75\nsheet:c:7:r:43:h:12.75\nborder:1:1px solid rgb(0,0,0)\nborder:2:thin solid rgb(0,0,0)\ncellformat:1:center\ncellformat:2:left\ncellformat:3:right\ncolor:1:rgb(0, 0, 0)\ncolor:2:rgb(0,0,0)\ncolor:3:rgb(221, 221, 221)\nfont:1:* * Trebuchet MS\nfont:2:* 10pt *\nfont:3:* 10pt Trebuchet MS\nfont:4:* 9pt Trebuchet MS\nfont:5:italic bold 10pt Trebuchet MS\nfont:6:italic normal * Trebuchet MS\nfont:7:normal bold 10pt Trebuchet MS\nfont:8:normal bold 14pt Trebuchet MS\nfont:9:normal bold 16pt Trebuchet MS\nfont:10:normal bold 28pt Trebuchet MS\nfont:11:normal normal * Trebuchet MS\nfont:12:normal normal 10pt *\nfont:13:normal normal 10pt Arial\nfont:14:normal normal 10pt Trebuchet MS\nlayout:1:padding:* * * *;vertical-align:bottom;\nlayout:2:padding:* * * *;vertical-align:middle;\nvalueformat:1:#,##0.00\nvalueformat:2:#,##0.00%\nvalueformat:3:m/d/yy\nvalueformat:4:text-html\n",
@@ -400,22 +400,22 @@ export let DATA: { [key: number]: TemplateData } = {
     template: "Mobile-Multi-Invoice",
     templateId: 1003,
     footers: [
-      { name: "Detail1", index: 1, isActive: false },
+      { name: "Detail1", index: 1, isActive: true },
       { name: "Detail2", index: 2, isActive: false },
-      { name: "Invoice", index: 3, isActive: true },
+      { name: "Invoice", index: 3, isActive: false },
     ],
     logoCell: {
-      1: "",
-      2: "",
-      3: "F8",
+      sheet1: "",
+      sheet2: "",
+      sheet3: "F8",
     },
     signatureCell: {
-      1: "",
-      2: "",
-      3: "F41",
+      sheet1: "",
+      sheet2: "",
+      sheet3: "F41",
     },
     cellMappings: {
-      1: {
+      sheet1: {
         Heading: "B2",
         Items: {
           Name: "Items",
@@ -430,7 +430,7 @@ export let DATA: { [key: number]: TemplateData } = {
           },
         },
       },
-      2: {
+      sheet2: {
         Heading: "B2",
         Items: {
           Name: "Items",
@@ -445,7 +445,7 @@ export let DATA: { [key: number]: TemplateData } = {
           },
         },
       },
-      3: {
+      sheet3: {
         Heading: "B2",
         Date: "G4",
         InvoiceNumber: "B5",
@@ -730,13 +730,13 @@ export let DATA: { [key: number]: TemplateData } = {
     templateId: 3001,
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
-      1: "F4",
+      sheet1: "F4",
     },
     signatureCell: {
-      1: "D31",
+      sheet1: "D31",
     },
     cellMappings: {
-      1: {
+      sheet1: {
         Heading: "B2",
         Date: "D6",
         InvoiceNumber: "D4",
@@ -837,13 +837,13 @@ export let DATA: { [key: number]: TemplateData } = {
     templateId: 3002,
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
-      1: "F4",
+      sheet1: "F4",
     },
     signatureCell: {
-      1: "D31",
+      sheet1: "D31",
     },
     cellMappings: {
-      1: {
+      sheet1: {
         Heading: "B2",
         Date: "D6",
         InvoiceNumber: "D4",
@@ -960,13 +960,13 @@ export let DATA: { [key: number]: TemplateData } = {
     templateId: 3003,
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
-      1: "F4",
+      sheet1: "F4",
     },
     signatureCell: {
-      1: "C36",
+      sheet1: "C36",
     },
     cellMappings: {
-      1: {
+      sheet1: {
         Heading: "F2",
         CompanyName: "B2",
         CompanySlogan: "B3",
@@ -1007,10 +1007,10 @@ export let DATA: { [key: number]: TemplateData } = {
     },
     msc: {
       numsheets: 1,
-      currentid: "sheet3",
+      currentid: "sheet1",
       currentname: "typeiii",
       sheetArr: {
-        sheet3: {
+        sheet1: {
           sheetstr: {
             savestr:
               "version:1.5\ncell:A1:l:3\ncell:B2:t:[Company Name]:l:1:f:3:cf:2:colspan:3\ncell:C2:t::l:2:f:9\ncell:D2:t::l:2:f:9\ncell:E2:l:1:f:7:c:2:cf:3\ncell:F2:t:INVOICE:l:1:f:7:c:2:cf:2:colspan:2\ncell:G2:t::l:2:f:9\ncell:B3:t:[Company Slogan]:f:4:cf:2:colspan:3\ncell:C3:t::l:2:f:9\ncell:D3:t::l:2:f:9\ncell:B4:f:2:colspan:2\ncell:F4:tvf:4:rowspan:4\ncell:B5:t:[Street Address]:f:1:cf:2:colspan:2\ncell:F5:l:1:f:6\ncell:G5:l:1:f:10:cf:1\ncell:B6:t:[City, State,  Zip]:f:1:cf:2:colspan:2\ncell:G6:l:1:f:9\ncell:B7:t:Phone\\c :f:1:cf:2:colspan:2\ncell:B8:t:Email\\c:f:1:cf:2:colspan:2\ncell:B9:colspan:2\ncell:F9:t:DATE \\c:l:1:f:6:cf:2\ncell:G9:l:1:f:10:cf:2:ntvf:3\ncell:B10:t:BILL TO\\c:f:5:c:1:bg:3:cf:2:colspan:2\ncell:F10:t:INVOICE # \\c:l:1:f:6:cf:2\ncell:G10:v:1:l:1:f:10:cf:2\ncell:B11:t:[Name]:f:1:cf:2:colspan:2\ncell:B12:t:[Company Name]:f:1:cf:2:colspan:2\ncell:F12:t:  \ncell:B13:t:[Street Address]:f:1:cf:2:colspan:2\ncell:B14:t:[City, State,  Zip]:f:1:cf:2:colspan:2\ncell:B15:t:Phone\\c :f:1:cf:2:colspan:2\ncell:A17:b::1::\ncell:B17:t:DESCRIPTION:b:1:1:1:1:l:1:f:6:c:1:bg:3:cf:1:colspan:5:rowspan:1\ncell:C17:t::l:2:f:9\ncell:D17:t::l:2:f:9\ncell:E17:t::l:2:f:9\ncell:F17:t::l:2:f:9\ncell:G17:t:AMOUNT:b:1:1:1::l:1:f:6:c:1:bg:3:cf:1\ncell:A18:b::1::\ncell:B18:b:1:1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C18:t::l:2:f:9\ncell:D18:t::l:2:f:9\ncell:E18:t::l:2:f:9\ncell:F18:t::b::2:::l:1:f:9\ncell:G18:b::1::1:f:1:ntvf:1\ncell:A19:b::1::\ncell:B19:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C19:t::l:2:f:9\ncell:D19:t::l:2:f:9\ncell:E19:t::l:2:f:9\ncell:F19:t::b::2:::l:1:f:9\ncell:G19:b::1::1:f:1:ntvf:1\ncell:A20:b::1::\ncell:B20:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C20:t::l:2:f:9\ncell:D20:t::l:2:f:9\ncell:E20:t::l:2:f:9\ncell:F20:t::b::2:::l:1:f:9\ncell:G20:b::1::1:f:1:ntvf:1\ncell:A21:b::1::\ncell:B21:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C21:t::l:2:f:9\ncell:D21:t::l:2:f:9\ncell:E21:t::l:2:f:9\ncell:F21:t::b::2:::l:1:f:9\ncell:G21:b::1::1:f:1:ntvf:1\ncell:A22:b::1::\ncell:B22:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C22:t::l:2:f:9\ncell:D22:t::l:2:f:9\ncell:E22:t::l:2:f:9\ncell:F22:t::b::2:::l:1:f:9\ncell:G22:b::1::1:f:1:ntvf:1\ncell:A23:b::1::\ncell:B23:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C23:t::l:2:f:9\ncell:D23:t::l:2:f:9\ncell:E23:t::l:2:f:9\ncell:F23:t::b::2:::l:1:f:9\ncell:G23:b::1::1:f:1:ntvf:1\ncell:A24:b::1::\ncell:B24:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C24:t::l:2:f:9\ncell:D24:t::l:2:f:9\ncell:E24:t::l:2:f:9\ncell:F24:t::b::2:::l:1:f:9\ncell:G24:b::1::1:f:1:ntvf:1\ncell:A25:b::1::\ncell:B25:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C25:t::l:2:f:9\ncell:D25:t::l:2:f:9\ncell:E25:t::l:2:f:9\ncell:F25:t::b::2:::l:1:f:9\ncell:G25:b::1::1:f:1:ntvf:1\ncell:A26:b::1::\ncell:B26:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C26:t::l:2:f:9\ncell:D26:t::l:2:f:9\ncell:E26:t::l:2:f:9\ncell:F26:t::b::2:::l:1:f:9\ncell:G26:b::1::1:f:1:ntvf:1\ncell:A27:b::1::\ncell:B27:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C27:t::l:2:f:9\ncell:D27:t::l:2:f:9\ncell:E27:t::l:2:f:9\ncell:F27:t::b::2:::l:1:f:9\ncell:G27:b::1::1:f:1:ntvf:1\ncell:A28:b::1::\ncell:B28:b::1::1:f:1:cf:2:colspan:5:rowspan:1\ncell:C28:t::l:2:f:9\ncell:D28:t::l:2:f:9\ncell:E28:t::l:2:f:9\ncell:F28:t::b::2:::l:1:f:9\ncell:G28:b::1::1:f:1:ntvf:1\ncell:A29:b::1::\ncell:B29:b::1:1:1:f:1:cf:2:colspan:5:rowspan:1\ncell:C29:t::b:::2::l:1:f:9\ncell:D29:t::b:::2::l:1:f:9\ncell:E29:t::b:::2::l:1:f:9\ncell:F29:t::b::2:2::l:1:f:9\ncell:G29:b::1:1:1:f:1:ntvf:1\ncell:B30:b:2::::l:1:f:9\ncell:C30:b:2::::l:1:f:9\ncell:D30:b:2::::l:1:f:9\ncell:E30:b:2::::l:1:f:10\ncell:F30:t:Subtotal:b:2::::l:1:f:10\ncell:G30:vtf:n:0:SUM(G18\\cG29):b:1::::f:8:ntvf:1\ncell:B31:t:NOTES:b:::2::l:1:f:6:cf:2:colspan:3:rowspan:1\ncell:C31:t::b:::2::l:1:f:9\ncell:D31:t::b:::2::l:1:f:9\ncell:F31:t:Tax Rate:l:1:f:1\ncell:G31:v:0:f:1:ntvf:2\ncell:B32:b:1::::f:1:cf:2:colspan:3\ncell:C32:t::b:2::::l:1:f:9\ncell:D32:t::b:2::::l:1:f:9\ncell:F32:t:Tax:l:1:f:1\ncell:G32:vtf:n:0:G31*G30:f:1:ntvf:1\ncell:B33:f:1:cf:2:colspan:3\ncell:C33:t::l:2:f:9\ncell:D33:t::l:2:f:9\ncell:F33:t:Other:b:::1::l:1:f:1\ncell:G33:v:0:b:::1::f:1:ntvf:1\ncell:B34:b:::1::f:1:cf:2:colspan:3:rowspan:1\ncell:C34:t::l:2:f:9\ncell:D34:t::l:2:f:9\ncell:F34:t:TOTAL:b:2::::l:1:f:6\ncell:G34:vtf:n:0:(G30+G32)+G33:b:1::::f:5:ntvf:1\ncell:C36:tvf:4:colspan:5:rowspan:7\ncol:A:w:40\ncol:B:w:232\ncol:C:w:53\ncol:D:w:90\ncol:E:w:54\ncol:F:w:91\ncol:G:w:99\nrow:1:h:34.5\nrow:2:h:34.5\nrow:3:h:14.25\nrow:4:h:14.25\nrow:5:h:14.25\nrow:6:h:14.25\nrow:7:h:14.25\nrow:8:h:14.25\nrow:10:h:14.25\nrow:11:h:14.25\nrow:12:h:14.25\nrow:13:h:14.25\nrow:14:h:14.25\nrow:15:h:14.25\nrow:17:h:14.25\nrow:18:h:14.25\nrow:19:h:14.25\nrow:20:h:14.25\nrow:21:h:14.25\nrow:22:h:14.25\nrow:23:h:14.25\nrow:24:h:14.25\nrow:25:h:14.25\nrow:26:h:14.25\nrow:27:h:14.25\nrow:28:h:14.25\nrow:29:h:14.25\nrow:30:h:14.25\nrow:31:h:14.25\nrow:32:h:14.25\nrow:33:h:14.25\nrow:34:h:14.25\nsheet:c:7:r:36:h:12.75\nborder:1:1px solid rgb(0,0,0)\nborder:2:thin solid rgb(0,0,0)\ncellformat:1:center\ncellformat:2:left\ncellformat:3:right\ncolor:1:rgb(0, 0, 0)\ncolor:2:rgb(0,0,0)\ncolor:3:rgb(221, 221, 221)\nfont:1:* * Trebuchet MS\nfont:2:* 10pt *\nfont:3:* 16pt Trebuchet MS\nfont:4:italic normal * Trebuchet MS\nfont:5:normal bold * Trebuchet MS\nfont:6:normal bold 10pt Trebuchet MS\nfont:7:normal bold 28pt Trebuchet MS\nfont:8:normal normal * Trebuchet MS\nfont:9:normal normal 10pt Arial\nfont:10:normal normal 10pt Trebuchet MS\nlayout:1:padding:* * * *;vertical-align:bottom;\nlayout:2:padding:* * * *;vertical-align:middle;\nlayout:3:padding:36px * 28px *;vertical-align:*;\nvalueformat:1:#,##0.00\nvalueformat:2:#,##0.00%\nvalueformat:3:m/d/yy\nvalueformat:4:text-html\n",
@@ -1084,13 +1084,13 @@ export let DATA: { [key: number]: TemplateData } = {
     templateId: 3004,
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
-      1: "F4",
+      sheet1: "F4",
     },
     signatureCell: {
-      1: "E36",
+      sheet1: "E36",
     },
     cellMappings: {
-      1: {
+      sheet1: {
         Heading: "F2",
         CompanyName: "B2",
         CompanySlogan: "B3",
@@ -1132,10 +1132,10 @@ export let DATA: { [key: number]: TemplateData } = {
     },
     msc: {
       numsheets: 1,
-      currentid: "sheet4",
+      currentid: "sheet1",
       currentname: "typeiv",
       sheetArr: {
-        sheet4: {
+        sheet1: {
           sheetstr: {
             savestr:
               'version:1.5\ncell:A1:l:3\ncell:B2:t:[Company Name]:l:1:f:2:cf:2:colspan:3:rowspan:1\ncell:C2:t::l:2:f:7\ncell:D2:t::l:2:f:7\ncell:F2:t:INVOICE:l:1:f:6:c:1:cf:2:colspan:2\ncell:G2:t::l:2:f:7\ncell:B3:t:[Company slogan]:f:3:cf:2:colspan:3:rowspan:1\ncell:C3:t::l:2:f:7\ncell:D3:t::l:2:f:7\ncell:B4:cf:2:colspan:3:rowspan:1\ncell:F4:tvf:4:rowspan:4\ncell:B5:t:[Street Address]:f:1:cf:2:colspan:3:rowspan:1\ncell:F5:l:1:f:5\ncell:G5:l:1:f:8:cf:1\ncell:B6:t:[City, State,  Zip]:f:1:cf:2:colspan:3:rowspan:1\ncell:G6:l:1:f:7\ncell:B7:t:Phone\\c :f:1:cf:2:colspan:3:rowspan:1\ncell:B8:t:Email\\c:f:1:cf:2:colspan:3:rowspan:1\ncell:B9:cf:2:colspan:3:rowspan:1\ncell:B10:t:BILL TO\\c:l:1:f:5:bg:2:cf:2:colspan:2\ncell:F10:t:DATE\\c:l:1:f:5:cf:2\ncell:G10:l:1:f:8:cf:2:ntvf:3\ncell:B11:t:[Name]:f:1:cf:2:colspan:3:rowspan:1\ncell:F11:t:INVOICE # \\c:l:1:f:5:cf:2\ncell:G11:v:1:l:1:f:8:cf:2\ncell:B12:t:[Company Name]:f:1:cf:2:colspan:3:rowspan:1\ncell:J12:tvf:4\ncell:B13:t:[Street Address]:f:1:cf:2:colspan:3:rowspan:1\ncell:B14:t:[City, State,  Zip]:f:1:cf:2:colspan:3:rowspan:1\ncell:B15:t:Phone\\c :f:1:cf:2:colspan:3:rowspan:1\ncell:B16:cf:2:colspan:3:rowspan:1\ncell:A17:b::1::\ncell:B17:t:DESCRIPTION:b:1:1:1:1:l:1:f:5:bg:2:cf:1:colspan:3:rowspan:1\ncell:C17:t::b:1::1::l:1:f:7:bg:2\ncell:D17:t::b:1::1::l:1:f:7:bg:2\ncell:E17:t:HOURS:b:1:1:1::l:1:f:5:bg:2:cf:1\ncell:F17:t:RATE:b:1:1:1::l:1:f:5:bg:2:cf:1\ncell:G17:t:AMOUNT:b:1:1:1::l:1:f:5:bg:2:cf:1\ncell:A18:b::1::\ncell:B18:b:1:1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C18:t::b:2::::l:1:f:7\ncell:D18:t::b:2:2:::l:1:f:7\ncell:E18:b:1:1::1:f:1:ntvf:1\ncell:F18:b:1:1::1:f:1:ntvf:1\ncell:G18:vtf:t::IF(E18*F18>0,E18*F18,""):b:1:1:::f:1:ntvf:1\ncell:A19:b::1::\ncell:B19:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C19:t::l:2:f:7\ncell:D19:t::b::2:::l:1:f:7\ncell:E19:b::1::1:f:1:ntvf:1\ncell:F19:b::1::1:f:1:ntvf:1\ncell:G19:vtf:t::IF(E19*F19>0,E19*F19,""):b::1:::f:1:ntvf:1\ncell:A20:b::1::\ncell:B20:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C20:t::l:2:f:7\ncell:D20:t::b::2:::l:1:f:7\ncell:E20:b::1::1:f:1:ntvf:1\ncell:F20:b::1::1:f:1:ntvf:1\ncell:G20:vtf:t::IF(E20*F20>0,E20*F20,""):b::1:::f:1:ntvf:1\ncell:A21:b::1::\ncell:B21:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C21:t::l:2:f:7\ncell:D21:t::b::2:::l:1:f:7\ncell:E21:b::1::1:f:1:ntvf:1\ncell:F21:b::1::1:f:1:ntvf:1\ncell:G21:vtf:t::IF(E21*F21>0,E21*F21,""):b::1:::f:1:ntvf:1\ncell:A22:b::1::\ncell:B22:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C22:t::l:2:f:7\ncell:D22:t::b::2:::l:1:f:7\ncell:E22:b::1::1:f:1:ntvf:1\ncell:F22:b::1::1:f:1:ntvf:1\ncell:G22:vtf:t::IF(E22*F22>0,E22*F22,""):b::1:::f:1:ntvf:1\ncell:A23:b::1::\ncell:B23:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C23:t::l:2:f:7\ncell:D23:t::b::2:::l:1:f:7\ncell:E23:b::1::1:f:1:ntvf:1\ncell:F23:b::1::1:f:1:ntvf:1\ncell:G23:vtf:t::IF(E23*F23>0,E23*F23,""):b::1:::f:1:ntvf:1\ncell:A24:b::1::\ncell:B24:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C24:t::l:2:f:7\ncell:D24:t::b::2:::l:1:f:7\ncell:E24:b::1::1:f:1:ntvf:1\ncell:F24:b::1::1:f:1:ntvf:1\ncell:G24:vtf:t::IF(E24*F24>0,E24*F24,""):b::1:::f:1:ntvf:1\ncell:A25:b::1::\ncell:B25:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C25:t::l:2:f:7\ncell:D25:t::b::2:::l:1:f:7\ncell:E25:b::1::1:f:1:ntvf:1\ncell:F25:b::1::1:f:1:ntvf:1\ncell:G25:vtf:t::IF(E25*F25>0,E25*F25,""):b::1:::f:1:ntvf:1\ncell:A26:b::1::\ncell:B26:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C26:t::l:2:f:7\ncell:D26:t::b::2:::l:1:f:7\ncell:E26:b::1::1:f:1:ntvf:1\ncell:F26:b::1::1:f:1:ntvf:1\ncell:G26:vtf:t::IF(E26*F26>0,E26*F26,""):b::1:::f:1:ntvf:1\ncell:A27:b::1::\ncell:B27:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C27:t::l:2:f:7\ncell:D27:t::b::2:::l:1:f:7\ncell:E27:b::1::1:f:1:ntvf:1\ncell:F27:b::1::1:f:1:ntvf:1\ncell:G27:vtf:t::IF(E27*F27>0,E27*F27,""):b::1:::f:1:ntvf:1\ncell:A28:b::1::\ncell:B28:b::1::1:f:1:cf:2:colspan:3:rowspan:1\ncell:C28:t::l:2:f:7\ncell:D28:t::b::2:::l:1:f:7\ncell:E28:b::1::1:f:1:ntvf:1\ncell:F28:b::1::1:f:1:ntvf:1\ncell:G28:vtf:t::IF(E28*F28>0,E28*F28,""):b::1:::f:1:ntvf:1\ncell:A29:b::1::\ncell:B29:b::1:1:1:f:1:cf:2:colspan:3:rowspan:1\ncell:C29:t::b:::2::l:1:f:7\ncell:D29:t::b::2:2::l:1:f:7\ncell:E29:b::1:1:1:f:1:ntvf:1\ncell:F29:b::1:1:1:f:1:ntvf:1\ncell:G29:vtf:t::IF(E29*F29>0,E29*F29,""):b::1:::f:1:ntvf:1\ncell:B30:b:2::::l:1:f:8:cf:1:colspan:3:rowspan:1\ncell:C30:t::b:2::::l:1:f:7\ncell:D30:t::b:2::::l:1:f:7\ncell:E30:b:2::::l:1:f:8\ncell:F30:t:Subtotal:b:1::::f:1\ncell:G30:vtf:n:0:SUM(G18\\cG29):b:1::::f:1:ntvf:1\ncell:B31:t:NOTES:b:::2::l:1:f:5:cf:2:colspan:3:rowspan:1\ncell:C31:t::b:::2::l:1:f:7\ncell:D31:t::b:::2::l:1:f:7\ncell:F31:t:Tax Rate:f:1\ncell:G31:v:0:f:1:ntvf:2\ncell:B32:b:1::::f:1:cf:2:colspan:3:rowspan:1\ncell:C32:t::b:2::::l:1:f:7\ncell:D32:t::b:2::::l:1:f:7\ncell:F32:t:Tax:f:1\ncell:G32:vtf:n:0:G31*G30:f:1:ntvf:1\ncell:B33:f:1:cf:2:colspan:3:rowspan:1\ncell:C33:t::l:2:f:7\ncell:D33:t::l:2:f:7\ncell:F33:t:Other:b:::1::l:1:f:1\ncell:G33:v:0:b:::1::f:1:ntvf:1\ncell:B34:f:1:cf:2:colspan:3:rowspan:1\ncell:C34:t::l:2:f:7\ncell:D34:t::l:2:f:7\ncell:F34:t:TOTAL:b:1::::l:1:f:4\ncell:G34:vtf:n:0:(G30+G32)+G33:b:1::::f:4:ntvf:1\ncell:B35:b:2::::l:1:f:7\ncell:C35:b:2::::l:1:f:7\ncell:D35:b:2::::l:1:f:7\ncell:C36:tvf:4\ncell:E36:colspan:3:rowspan:4\ncol:A:w:40\ncol:B:w:194\ncol:C:w:128\ncol:D:w:60\ncol:E:w:65\ncol:F:w:95\ncol:G:w:90\nrow:1:h:34.5\nrow:2:h:34.5\nrow:3:h:14.25\nrow:4:h:14.25\nrow:5:h:14.25\nrow:6:h:14.25\nrow:7:h:14.25\nrow:8:h:14.25\nrow:10:h:14.25\nrow:11:h:14.25\nrow:12:h:14.25\nrow:13:h:14.25\nrow:14:h:14.25\nrow:15:h:14.25\nrow:17:h:14.25\nrow:18:h:14.25\nrow:19:h:14.25\nrow:20:h:14.25\nrow:21:h:14.25\nrow:22:h:14.25\nrow:23:h:14.25\nrow:24:h:14.25\nrow:25:h:14.25\nrow:26:h:14.25\nrow:27:h:14.25\nrow:28:h:14.25\nrow:29:h:14.25\nrow:30:h:14.25\nrow:31:h:14.25\nrow:32:h:14.25\nrow:33:h:14.25\nrow:34:h:14.25\nrow:35:h:14.25\nsheet:c:10:r:36:h:12.75\nborder:1:1px solid rgb(0,0,0)\nborder:2:thin solid rgb(0,0,0)\ncellformat:1:center\ncellformat:2:left\ncolor:1:rgb(0,0,0)\ncolor:2:rgb(221, 221, 221)\nfont:1:* * Trebuchet MS\nfont:2:* 16pt Trebuchet MS\nfont:3:italic normal * Trebuchet MS\nfont:4:normal bold * Trebuchet MS\nfont:5:normal bold 10pt Trebuchet MS\nfont:6:normal bold 28pt Trebuchet MS\nfont:7:normal normal 10pt Arial\nfont:8:normal normal 10pt Trebuchet MS\nlayout:1:padding:* * * *;vertical-align:bottom;\nlayout:2:padding:* * * *;vertical-align:middle;\nlayout:3:padding:36px * 28px *;vertical-align:*;\nvalueformat:1:#,##0.00\nvalueformat:2:#,##0.00%\nvalueformat:3:m/d/yy\nvalueformat:4:text-html\n',

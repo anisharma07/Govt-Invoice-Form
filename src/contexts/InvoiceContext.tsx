@@ -36,7 +36,7 @@ interface InvoiceProviderProps {
 export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
   children,
 }) => {
-  const [selectedFile, setSelectedFile] = useState<string>("default");
+  const [selectedFile, setSelectedFile] = useState<string>("file_not_found");
   const [billType, setBillType] = useState<number>(1);
   const [activeTemplateData, setActiveTemplateData] = useState<TemplateData | null>(null);
   const [store] = useState(() => new Local());
@@ -64,7 +64,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
         }
       }
     } catch (error) {
-      console.warn("Failed to load invoice state from localStorage:", error);
+      // Failed to load invoice state from localStorage
     }
   }, []);
 
@@ -73,7 +73,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
     try {
       localStorage.setItem("stark-invoice-selected-file", selectedFile);
     } catch (error) {
-      console.warn("Failed to save selected file to localStorage:", error);
+      // Failed to save selected file to localStorage
     }
   }, [selectedFile]);
 
@@ -81,7 +81,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
     try {
       localStorage.setItem("stark-invoice-bill-type", billType.toString());
     } catch (error) {
-      console.warn("Failed to save bill type to localStorage:", error);
+      // Failed to save bill type to localStorage
     }
   }, [billType]);
 
@@ -93,7 +93,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
         localStorage.removeItem("stark-invoice-active-template-id");
       }
     } catch (error) {
-      console.warn("Failed to save active template id to localStorage:", error);
+      // Failed to save active template id to localStorage
     }
   }, [activeTemplateData]);
 
@@ -110,7 +110,7 @@ export const InvoiceProvider: React.FC<InvoiceProviderProps> = ({
   };
 
   const resetToDefaults = () => {
-    setSelectedFile("default");
+    setSelectedFile("File_Not_found");
     setBillType(1);
     setActiveTemplateData(null);
   };

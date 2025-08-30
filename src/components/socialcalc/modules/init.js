@@ -30,8 +30,26 @@ export function initializeApp(data) {
   workbookcontrol.InitializeWorkBookControl();
   // alert("app: "+JSON.stringify(data));
   SocialCalc.WorkBookControlLoad(data);
-  // Fixed height setting - this could be problematic for mobile
+
+  // Calculate proper height for the spreadsheet
   let ele = document.getElementById("te_griddiv");
-  // ele.style.height = "1600px";
+  if (ele) {
+    // Get the available height from the container
+    const container = document.getElementById("container");
+    const ionContent = document.querySelector("ion-content");
+    const ionHeader = document.querySelector("ion-header");
+
+    if (container && ionContent && ionHeader) {
+      const headerHeight = ionHeader.offsetHeight || 0;
+      const viewportHeight = window.innerHeight;
+      const availableHeight = viewportHeight - headerHeight;
+
+      // Set a more precise height for mobile
+      ele.style.height = availableHeight + "px";
+      ele.style.marginBottom = "0px";
+      ele.style.paddingBottom = "0px";
+    }
+  }
+
   spreadsheet.DoOnResize();
 }

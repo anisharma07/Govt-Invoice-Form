@@ -11,11 +11,8 @@ import {
   IonIcon,
   IonButtons,
   IonModal,
-  IonFab,
-  IonFabButton,
   IonSegment,
   IonSegmentButton,
-  IonLabel,
   IonText,
 } from "@ionic/react";
 import {
@@ -42,23 +39,22 @@ import { useHistory } from "react-router-dom";
 import { File } from "../components/Storage/LocalStorage";
 const FilesPage: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
-  const {
-    selectedFile,
-    billType,
-    store,
-    updateSelectedFile,
-    updateBillType,
-  } = useInvoice();
+  const { selectedFile, store, updateSelectedFile, updateBillType } =
+    useInvoice();
   const history = useHistory();
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showFileNamePrompt, setShowFileNamePrompt] = useState(false);
-  const [selectedTemplateForFile, setSelectedTemplateForFile] = useState<number | null>(null);
+  const [selectedTemplateForFile, setSelectedTemplateForFile] = useState<
+    number | null
+  >(null);
   const [newFileName, setNewFileName] = useState("");
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const [templateFilter, setTemplateFilter] = useState<"all" | "web" | "mobile" | "tablet">("all");
+  const [templateFilter, setTemplateFilter] = useState<
+    "all" | "web" | "mobile" | "tablet"
+  >("all");
 
   const [device] = useState(AppGeneral.getDeviceType());
 
@@ -69,42 +65,70 @@ const FilesPage: React.FC = () => {
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   // Clear selected file when navigating to files page to prevent conflicts
   useEffect(() => {
-    // Clear the selected file to prevent infinite loops when navigating back
-    if (selectedFile && selectedFile !== "") {
-      console.log("Clearing selected file when navigating to files page");
-      updateSelectedFile("");
-    }
+    updateSelectedFile("");
   }, []);
 
   const getTemplateMetadata = (templateId: number) => {
-    return tempMeta.find(meta => meta.template_id === templateId);
+    return tempMeta.find((meta) => meta.template_id === templateId);
   };
 
   // Categorize templates based on their names
-  const categorizeTemplate = (templateName: string) => {
+  const categorizeTemplate = (templateName: string | undefined) => {
+    if (!templateName) return "web";
     const name = templateName.toLowerCase();
-    if (name.includes('mobile')) {
-      return 'mobile';
-    } else if (name.includes('tablet')) {
-      return 'tablet';
+    if (name.includes("mobile")) {
+      return "mobile";
+    } else if (name.includes("tablet")) {
+      return "tablet";
     } else {
-      return 'web';
+      return "web";
     }
+  };
+
+  const getAvailableTemplates = () => {
+    // map tempMeta.template_id and tempMeta.tempate_name with templateId and template resp
+    return tempMeta.map((template) => {
+      const extra = DATA[template.template_id];
+      return {
+        templateId: template.template_id,
+        template: template.name,
+        ImageUri: template.ImageUri,
+        footers: extra?.footers || [],
+        ...extra,
+      };
+    });
+  };
+
+  const getTemplateInfo = (templateId: number) => {
+    const template = DATA[templateId];
+    return template ? template.template : `Template ${templateId}`;
   };
 
   // Get categorized templates
   const getCategorizedTemplates = () => {
     const templates = tempMeta;
     const categorized = {
-      web: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.template_id)?.name || t.name) === 'web'),
-      mobile: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.template_id)?.name || t.name) === 'mobile'),
-      tablet: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.template_id)?.name || t.name) === 'tablet'),
+      web: templates.filter((t) => {
+        const metadata = getTemplateMetadata(t.template_id);
+        const templateName = metadata?.name || t.name || "Unknown Template";
+        return categorizeTemplate(templateName) === "web";
+      }),
+      mobile: templates.filter((t) => {
+        const metadata = getTemplateMetadata(t.template_id);
+        const templateName = metadata?.name || t.name || "Unknown Template";
+        return categorizeTemplate(templateName) === "mobile";
+      }),
+      tablet: templates.filter((t) => {
+        const metadata = getTemplateMetadata(t.template_id);
+        const templateName = metadata?.name || t.name || "Unknown Template";
+        return categorizeTemplate(templateName) === "tablet";
+      }),
     };
     return categorized;
   };
@@ -112,8 +136,8 @@ const FilesPage: React.FC = () => {
   // Get filtered templates based on current filter
   const getFilteredTemplates = () => {
     const categorized = getCategorizedTemplates();
-    
-    if (templateFilter === 'all') {
+
+    if (templateFilter === "all") {
       // Return in order: web, mobile, tablet
       return [...categorized.web, ...categorized.mobile, ...categorized.tablet];
     } else {
@@ -141,37 +165,40 @@ const FilesPage: React.FC = () => {
     if (filename === "Untitled") {
       return {
         isValid: false,
-        message: "cannot update Untitled file! Use Save As Button to save."
+        message: "cannot update Untitled file! Use Save As Button to save.",
       };
     } else if (filename === "" || !filename) {
       return {
         isValid: false,
-        message: "Filename cannot be empty"
+        message: "Filename cannot be empty",
       };
     } else if (filename.length > 30) {
       return {
         isValid: false,
-        message: "Filename too long"
+        message: "Filename too long",
       };
     } else if (/^[a-zA-Z0-9- ]*$/.test(filename) === false) {
       return {
         isValid: false,
-        message: "Special Characters cannot be used"
+        message: "Special Characters cannot be used",
       };
     } else if (await store._checkKey(filename)) {
       return {
         isValid: false,
-        message: "Filename already exists"
+        message: "Filename already exists",
       };
     }
     return {
       isValid: true,
-      message: ""
+      message: "",
     };
   };
 
   // Create new file with template
-  const createNewFileWithTemplate = async (templateId: number, fileName: string) => {
+  const createNewFileWithTemplate = async (
+    templateId: number,
+    fileName: string
+  ) => {
     try {
       // Validate filename first
       const validation = await _validateName(fileName);
@@ -197,7 +224,9 @@ const FilesPage: React.FC = () => {
       }
 
       // Find the active footer index, default to 1 if none found
-      const activeFooter = templateData.footers?.find(footer => footer.isActive);
+      const activeFooter = templateData.footers?.find(
+        (footer) => footer.isActive
+      );
       const activeFooterIndex = activeFooter ? activeFooter.index : 1;
 
       const now = new Date().toISOString();
@@ -212,10 +241,12 @@ const FilesPage: React.FC = () => {
       );
 
       await store._saveFile(newFile);
-      
-      setToastMessage(`File "${fileName}" created with ${templateData.template}`);
+
+      setToastMessage(
+        `File "${fileName}" created with ${templateData.template}`
+      );
       setShowToast(true);
-      
+
       // Reset modal state
       setShowFileNamePrompt(false);
       setSelectedTemplateForFile(null);
@@ -223,10 +254,15 @@ const FilesPage: React.FC = () => {
       setShowTemplateModal(false); // Dismiss the template modal
 
       updateSelectedFile(fileName);
-      updateBillType(1);
-      history.replace(`/app/editor/${encodeURIComponent(fileName)}`);
+      updateBillType(activeFooterIndex);
+
+      // Add 200ms timeout for routing
+      setTimeout(() => {
+        const link = document.createElement("a");
+        link.href = `/app/editor/${fileName}`;
+        link.click();
+      }, 200);
     } catch (error) {
-      console.error("Error creating file:", error);
       setToastMessage("Failed to create file");
       setShowToast(true);
     }
@@ -236,17 +272,14 @@ const FilesPage: React.FC = () => {
   const renderTemplateModal = () => {
     const filteredTemplates = getFilteredTemplates();
     const categorized = getCategorizedTemplates();
-    
+
     return (
       <IonModal isOpen={showTemplateModal} onDidDismiss={handleModalClose}>
         <IonHeader>
           <IonToolbar>
             <IonTitle>Choose Template</IonTitle>
             <IonButtons slot="end">
-              <IonButton 
-                fill="clear" 
-                onClick={handleModalClose}
-              >
+              <IonButton fill="clear" onClick={handleModalClose}>
                 <IonIcon icon={close} />
               </IonButton>
             </IonButtons>
@@ -254,133 +287,222 @@ const FilesPage: React.FC = () => {
         </IonHeader>
         <IonContent>
           {/* Filter Segment */}
-          <div style={{ 
-            padding: "16px", 
-            background: isDarkMode ? "var(--ion-color-step-50)" : "var(--ion-color-step-50)",
-            borderBottom: `1px solid ${isDarkMode ? "var(--ion-color-step-200)" : "var(--ion-color-step-150)"}`,
-            margin: "0"
-          }}>
-            <IonSegment 
-              value={templateFilter} 
-              onIonChange={(e) => setTemplateFilter(e.detail.value as "all" | "web" | "mobile" | "tablet")}
+          <div
+            style={{
+              padding: "16px",
+              background: isDarkMode
+                ? "var(--ion-color-step-50)"
+                : "var(--ion-color-step-50)",
+              borderBottom: `1px solid ${
+                isDarkMode
+                  ? "var(--ion-color-step-200)"
+                  : "var(--ion-color-step-150)"
+              }`,
+              margin: "0",
+            }}
+          >
+            <IonSegment
+              value={templateFilter}
+              onIonChange={(e) =>
+                setTemplateFilter(
+                  e.detail.value as "all" | "web" | "mobile" | "tablet"
+                )
+              }
               style={{
-                background: isDarkMode ? "var(--ion-color-step-150)" : "var(--ion-background-color)",
+                background: isDarkMode
+                  ? "var(--ion-color-step-150)"
+                  : "var(--ion-background-color)",
                 borderRadius: "8px",
                 padding: "3px",
-                border: `1px solid ${isDarkMode ? "var(--ion-color-step-250)" : "var(--ion-color-step-150)"}`,
+                border: `1px solid ${
+                  isDarkMode
+                    ? "var(--ion-color-step-250)"
+                    : "var(--ion-color-step-150)"
+                }`,
                 boxShadow: "none",
-                '--background': isDarkMode ? 'var(--ion-color-step-150)' : 'var(--ion-background-color)',
-                '--background-checked': isDarkMode ? 'var(--ion-color-primary)' : 'var(--ion-color-primary)',
-                '--color': isDarkMode ? '#ffffff' : '#000000',
-                '--color-checked': '#ffffff'
+                "--background": isDarkMode
+                  ? "var(--ion-color-step-150)"
+                  : "var(--ion-background-color)",
+                "--background-checked": isDarkMode
+                  ? "var(--ion-color-primary)"
+                  : "var(--ion-color-primary)",
+                "--color": isDarkMode ? "#ffffff" : "#000000",
+                "--color-checked": "#ffffff",
               }}
             >
-              <IonSegmentButton 
-                value="all" 
-                style={{ 
+              <IonSegmentButton
+                value="all"
+                style={{
                   minHeight: "36px",
-                  '--background': isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  '--background-checked': isDarkMode ? 'var(--ion-color-primary)' : 'var(--ion-color-primary)',
-                  '--color': isDarkMode ? '#ffffff' : '#000000',
-                  '--color-checked': '#ffffff'
+                  "--background": isDarkMode
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.05)",
+                  "--background-checked": isDarkMode
+                    ? "var(--ion-color-primary)"
+                    : "var(--ion-color-primary)",
+                  "--color": isDarkMode ? "#ffffff" : "#000000",
+                  "--color-checked": "#ffffff",
                 }}
               >
-                <IonIcon 
-                  icon={filterOutline} 
-                  style={{ 
+                <IonIcon
+                  icon={filterOutline}
+                  style={{
                     fontSize: "16px",
-                    color: templateFilter === 'all' ? '#ffffff' : (isDarkMode ? '#ffffff' : '#000000')
-                  }} 
+                    color:
+                      templateFilter === "all"
+                        ? "#ffffff"
+                        : isDarkMode
+                        ? "#ffffff"
+                        : "#000000",
+                  }}
                 />
-                <IonText style={{ 
-                  fontSize: "11px", 
-                  fontWeight: "500", 
-                  marginLeft: "4px",
-                  marginBottom:"15px",
-                  color: templateFilter === 'all' ? '#ffffff' : (isDarkMode ? '#ffffff' : '#000000')
-                }}>
-                  All ({categorized.web.length + categorized.mobile.length + categorized.tablet.length})
+                <IonText
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "500",
+                    marginLeft: "4px",
+                    marginBottom: "15px",
+                    color:
+                      templateFilter === "all"
+                        ? "#ffffff"
+                        : isDarkMode
+                        ? "#ffffff"
+                        : "#000000",
+                  }}
+                >
+                  All (
+                  {categorized.web.length +
+                    categorized.mobile.length +
+                    categorized.tablet.length}
+                  )
                 </IonText>
               </IonSegmentButton>
-              <IonSegmentButton 
-                value="web" 
-                style={{ 
+              <IonSegmentButton
+                value="web"
+                style={{
                   minHeight: "36px",
-                  '--background': isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  '--background-checked': isDarkMode ? 'var(--ion-color-primary)' : 'var(--ion-color-primary)',
-                  '--color': isDarkMode ? '#ffffff' : '#000000',
-                  '--color-checked': '#ffffff'
+                  "--background": isDarkMode
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.05)",
+                  "--background-checked": isDarkMode
+                    ? "var(--ion-color-primary)"
+                    : "var(--ion-color-primary)",
+                  "--color": isDarkMode ? "#ffffff" : "#000000",
+                  "--color-checked": "#ffffff",
                 }}
               >
-                <IonIcon 
-                  icon={desktopOutline} 
-                  style={{ 
+                <IonIcon
+                  icon={desktopOutline}
+                  style={{
                     fontSize: "16px",
-                    color: templateFilter === 'web' ? '#ffffff' : (isDarkMode ? '#ffffff' : '#000000')
-                  }} 
+                    color:
+                      templateFilter === "web"
+                        ? "#ffffff"
+                        : isDarkMode
+                        ? "#ffffff"
+                        : "#000000",
+                  }}
                 />
-                <IonText style={{ 
-                  fontSize: "11px", 
-                  fontWeight: "500", 
-                  marginLeft: "4px",
-                  marginBottom:"15px",
-                  color: templateFilter === 'web' ? '#ffffff' : (isDarkMode ? '#ffffff' : '#000000')
-                }}>
+                <IonText
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "500",
+                    marginLeft: "4px",
+                    marginBottom: "15px",
+                    color:
+                      templateFilter === "web"
+                        ? "#ffffff"
+                        : isDarkMode
+                        ? "#ffffff"
+                        : "#000000",
+                  }}
+                >
                   Web ({categorized.web.length})
                 </IonText>
               </IonSegmentButton>
-              <IonSegmentButton 
-                value="mobile" 
-                style={{ 
+              <IonSegmentButton
+                value="mobile"
+                style={{
                   minHeight: "36px",
-                  '--background': isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  '--background-checked': isDarkMode ? 'var(--ion-color-primary)' : 'var(--ion-color-primary)',
-                  '--color': isDarkMode ? '#ffffff' : '#000000',
-                  '--color-checked': '#ffffff'
+                  "--background": isDarkMode
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.05)",
+                  "--background-checked": isDarkMode
+                    ? "var(--ion-color-primary)"
+                    : "var(--ion-color-primary)",
+                  "--color": isDarkMode ? "#ffffff" : "#000000",
+                  "--color-checked": "#ffffff",
                 }}
               >
-                <IonIcon 
-                  icon={phonePortraitOutline} 
-                  style={{ 
+                <IonIcon
+                  icon={phonePortraitOutline}
+                  style={{
                     fontSize: "16px",
-                    color: templateFilter === 'mobile' ? '#ffffff' : (isDarkMode ? '#ffffff' : '#000000')
-                  }} 
+                    color:
+                      templateFilter === "mobile"
+                        ? "#ffffff"
+                        : isDarkMode
+                        ? "#ffffff"
+                        : "#000000",
+                  }}
                 />
-                <IonText style={{ 
-                  fontSize: "11px", 
-                  fontWeight: "500", 
-                  marginLeft: "4px",
-                  marginBottom:"15px",
-                  color: templateFilter === 'mobile' ? '#ffffff' : (isDarkMode ? '#ffffff' : '#000000')
-
-                }}>
+                <IonText
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "500",
+                    marginLeft: "4px",
+                    marginBottom: "15px",
+                    color:
+                      templateFilter === "mobile"
+                        ? "#ffffff"
+                        : isDarkMode
+                        ? "#ffffff"
+                        : "#000000",
+                  }}
+                >
                   Mobile ({categorized.mobile.length})
                 </IonText>
               </IonSegmentButton>
-              <IonSegmentButton 
-                value="tablet" 
-                style={{ 
+              <IonSegmentButton
+                value="tablet"
+                style={{
                   minHeight: "36px",
-                  '--background': isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  '--background-checked': isDarkMode ? 'var(--ion-color-primary)' : 'var(--ion-color-primary)',
-                  '--color': isDarkMode ? '#ffffff' : '#000000',
-                  '--color-checked': '#ffffff'
+                  "--background": isDarkMode
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.05)",
+                  "--background-checked": isDarkMode
+                    ? "var(--ion-color-primary)"
+                    : "var(--ion-color-primary)",
+                  "--color": isDarkMode ? "#ffffff" : "#000000",
+                  "--color-checked": "#ffffff",
                 }}
               >
-                <IonIcon 
-                  icon={tabletPortraitOutline} 
-                  style={{ 
+                <IonIcon
+                  icon={tabletPortraitOutline}
+                  style={{
                     fontSize: "16px",
-                    color: templateFilter === 'tablet' ? '#ffffff' : (isDarkMode ? '#ffffff' : '#000000')
-                  }} 
+                    color:
+                      templateFilter === "tablet"
+                        ? "#ffffff"
+                        : isDarkMode
+                        ? "#ffffff"
+                        : "#000000",
+                  }}
                 />
-                <IonText style={{ 
-                  fontSize: "11px", 
-                  fontWeight: "500", 
-                  marginLeft: "4px",
-                  marginBottom:"15px",
-                  color: templateFilter === 'tablet' ? '#ffffff' : (isDarkMode ? '#ffffff' : '#000000')
-                }}>
+                <IonText
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "500",
+                    marginLeft: "4px",
+                    marginBottom: "15px",
+                    color:
+                      templateFilter === "tablet"
+                        ? "#ffffff"
+                        : isDarkMode
+                        ? "#ffffff"
+                        : "#000000",
+                  }}
+                >
                   Tablet ({categorized.tablet.length})
                 </IonText>
               </IonSegmentButton>
@@ -389,31 +511,37 @@ const FilesPage: React.FC = () => {
 
           <div style={{ padding: "16px" }}>
             {filteredTemplates.length === 0 ? (
-              <div style={{ 
-                textAlign: "center", 
-                padding: "60px 20px",
-                color: "var(--ion-color-medium)"
-              }}>
-                <IonIcon 
-                  icon={layers} 
-                  style={{ 
-                    fontSize: "48px", 
-                    marginBottom: "16px", 
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "60px 20px",
+                  color: "var(--ion-color-medium)",
+                }}
+              >
+                <IonIcon
+                  icon={layers}
+                  style={{
+                    fontSize: "48px",
+                    marginBottom: "16px",
                     display: "block",
                     opacity: 0.4,
-                    color: "var(--ion-color-medium)"
+                    color: "var(--ion-color-medium)",
                   }}
                 />
-                <h3 style={{ 
-                  margin: "0 0 8px 0", 
-                  fontSize: "16px", 
-                  fontWeight: "600",
-                  color: "var(--ion-color-medium)"
-                }}>
+                <h3
+                  style={{
+                    margin: "0 0 8px 0",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    color: "var(--ion-color-medium)",
+                  }}
+                >
                   No Templates Found
                 </h3>
                 <p style={{ margin: "0", fontSize: "13px", opacity: 0.8 }}>
-                  No templates found for {templateFilter === "all" ? "this filter" : templateFilter} category
+                  No templates found for{" "}
+                  {templateFilter === "all" ? "this filter" : templateFilter}{" "}
+                  category
                 </p>
               </div>
             ) : (
@@ -423,22 +551,36 @@ const FilesPage: React.FC = () => {
                     {/* Web Templates Section */}
                     {categorized.web.length > 0 && (
                       <>
-                        <div style={{ 
-                          fontSize: "14px", 
-                          fontWeight: "600", 
-                          display: "flex", 
-                          alignItems: "center", 
-                          gap: "8px",
-                          color: isDarkMode ? "var(--ion-color-step-600)" : "var(--ion-color-step-500)",
-                          padding: "8px 0",
-                          borderBottom: `1px solid ${isDarkMode ? "var(--ion-color-step-150)" : "var(--ion-color-step-100)"}`,
-                          marginBottom: "16px"
-                        }}>
-                          <IonIcon icon={desktopOutline} style={{ fontSize: "16px" }} />
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: isDarkMode
+                              ? "var(--ion-color-step-600)"
+                              : "var(--ion-color-step-500)",
+                            padding: "8px 0",
+                            borderBottom: `1px solid ${
+                              isDarkMode
+                                ? "var(--ion-color-step-150)"
+                                : "var(--ion-color-step-100)"
+                            }`,
+                            marginBottom: "16px",
+                          }}
+                        >
+                          <IonIcon
+                            icon={desktopOutline}
+                            style={{ fontSize: "16px" }}
+                          />
                           Web Templates ({categorized.web.length})
                         </div>
-                        {categorized.web.map((template) => renderTemplateItem(template))}
-                        {(categorized.mobile.length > 0 || categorized.tablet.length > 0) && (
+                        {categorized.web.map((template) =>
+                          renderTemplateItem(template, "web")
+                        )}
+                        {(categorized.mobile.length > 0 ||
+                          categorized.tablet.length > 0) && (
                           <div style={{ margin: "24px 0" }} />
                         )}
                       </>
@@ -447,21 +589,34 @@ const FilesPage: React.FC = () => {
                     {/* Mobile Templates Section */}
                     {categorized.mobile.length > 0 && (
                       <>
-                        <div style={{ 
-                          fontSize: "14px", 
-                          fontWeight: "600", 
-                          display: "flex", 
-                          alignItems: "center", 
-                          gap: "8px",
-                          color: isDarkMode ? "var(--ion-color-step-600)" : "var(--ion-color-step-500)",
-                          padding: "8px 0",
-                          borderBottom: `1px solid ${isDarkMode ? "var(--ion-color-step-150)" : "var(--ion-color-step-100)"}`,
-                          marginBottom: "16px"
-                        }}>
-                          <IonIcon icon={phonePortraitOutline} style={{ fontSize: "16px" }} />
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: isDarkMode
+                              ? "var(--ion-color-step-600)"
+                              : "var(--ion-color-step-500)",
+                            padding: "8px 0",
+                            borderBottom: `1px solid ${
+                              isDarkMode
+                                ? "var(--ion-color-step-150)"
+                                : "var(--ion-color-step-100)"
+                            }`,
+                            marginBottom: "16px",
+                          }}
+                        >
+                          <IonIcon
+                            icon={phonePortraitOutline}
+                            style={{ fontSize: "16px" }}
+                          />
                           Mobile Templates ({categorized.mobile.length})
                         </div>
-                        {categorized.mobile.map((template) => renderTemplateItem(template))}
+                        {categorized.mobile.map((template) =>
+                          renderTemplateItem(template, "mobile")
+                        )}
                         {categorized.tablet.length > 0 && (
                           <div style={{ margin: "24px 0" }} />
                         )}
@@ -471,29 +626,43 @@ const FilesPage: React.FC = () => {
                     {/* Tablet Templates Section */}
                     {categorized.tablet.length > 0 && (
                       <>
-                        <div style={{ 
-                          fontSize: "14px", 
-                          fontWeight: "600", 
-                          display: "flex", 
-                          alignItems: "center", 
-                          gap: "8px",
-                          color: isDarkMode ? "var(--ion-color-step-600)" : "var(--ion-color-step-500)",
-                          padding: "8px 0",
-                          borderBottom: `1px solid ${isDarkMode ? "var(--ion-color-step-150)" : "var(--ion-color-step-100)"}`,
-                          marginBottom: "16px"
-                        }}>
-                          <IonIcon icon={tabletPortraitOutline} style={{ fontSize: "16px" }} />
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: isDarkMode
+                              ? "var(--ion-color-step-600)"
+                              : "var(--ion-color-step-500)",
+                            padding: "8px 0",
+                            borderBottom: `1px solid ${
+                              isDarkMode
+                                ? "var(--ion-color-step-150)"
+                                : "var(--ion-color-step-100)"
+                            }`,
+                            marginBottom: "16px",
+                          }}
+                        >
+                          <IonIcon
+                            icon={tabletPortraitOutline}
+                            style={{ fontSize: "16px" }}
+                          />
                           Tablet Templates ({categorized.tablet.length})
                         </div>
-                        {categorized.tablet.map((template) => renderTemplateItem(template))}
+                        {categorized.tablet.map((template) =>
+                          renderTemplateItem(template, "tablet")
+                        )}
                       </>
                     )}
                   </>
                 )}
 
-                {templateFilter !== "all" && (
-                  filteredTemplates.map((template) => renderTemplateItem(template))
-                )}
+                {templateFilter !== "all" &&
+                  filteredTemplates.map((template) =>
+                    renderTemplateItem(template, "filtered")
+                  )}
               </>
             )}
           </div>
@@ -503,48 +672,87 @@ const FilesPage: React.FC = () => {
   };
 
   // Helper function to render individual template items
-  const renderTemplateItem = (template: any) => {
-    const metadata = getTemplateMetadata(template.templateId);
-    const category = categorizeTemplate(metadata?.name || template.template);
-    
+  const renderTemplateItem = (template: any, keyPrefix?: string) => {
+    const metadata = getTemplateMetadata(
+      template.templateId || template.template_id
+    );
+    const templateName =
+      metadata?.name ||
+      template.template ||
+      template.name ||
+      "Unknown Template";
+    const category = categorizeTemplate(templateName);
+
+    // Get the template data from DATA to access footers
+    const templateData = DATA[template.templateId || template.template_id];
+    const footers = templateData?.footers || [];
+
     return (
       <div
-        key={template.templateId}
-        onClick={() => handleTemplateSelect(template.templateId)}
+        key={
+          keyPrefix
+            ? `${keyPrefix}-${template.templateId || template.template_id}`
+            : template.templateId || template.template_id
+        }
+        onClick={() =>
+          handleTemplateSelect(template.templateId || template.template_id)
+        }
         style={{
-          border: `1px solid ${isDarkMode ? "var(--ion-color-step-200)" : "var(--ion-color-step-150)"}`,
+          border: `1px solid ${
+            isDarkMode
+              ? "var(--ion-color-step-200)"
+              : "var(--ion-color-step-150)"
+          }`,
           borderRadius: "8px",
           padding: "12px",
           marginBottom: "12px",
           cursor: "pointer",
-          backgroundColor: isDarkMode ? "var(--ion-color-step-50)" : "var(--ion-background-color)",
+          backgroundColor: isDarkMode
+            ? "var(--ion-color-step-50)"
+            : "var(--ion-background-color)",
           display: "flex",
           alignItems: "center",
           gap: "12px",
-          transition: "all 0.2s ease"
+          transition: "all 0.2s ease",
         }}
         onMouseOver={(e) => {
-          e.currentTarget.style.backgroundColor = isDarkMode ? "var(--ion-color-step-100)" : "var(--ion-color-step-50)";
-          e.currentTarget.style.borderColor = isDarkMode ? "var(--ion-color-step-300)" : "var(--ion-color-step-200)";
+          e.currentTarget.style.backgroundColor = isDarkMode
+            ? "var(--ion-color-step-100)"
+            : "var(--ion-color-step-50)";
+          e.currentTarget.style.borderColor = isDarkMode
+            ? "var(--ion-color-step-300)"
+            : "var(--ion-color-step-200)";
         }}
         onMouseOut={(e) => {
-          e.currentTarget.style.backgroundColor = isDarkMode ? "var(--ion-color-step-50)" : "var(--ion-background-color)";
-          e.currentTarget.style.borderColor = isDarkMode ? "var(--ion-color-step-200)" : "var(--ion-color-step-150)";
+          e.currentTarget.style.backgroundColor = isDarkMode
+            ? "var(--ion-color-step-50)"
+            : "var(--ion-background-color)";
+          e.currentTarget.style.borderColor = isDarkMode
+            ? "var(--ion-color-step-200)"
+            : "var(--ion-color-step-150)";
         }}
       >
         {/* Template Image */}
-        <div style={{
-          width: "56px",
-          height: "56px",
-          borderRadius: "6px",
-          overflow: "hidden",
-          backgroundColor: isDarkMode ? "var(--ion-color-step-100)" : "var(--ion-color-step-50)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          border: `1px solid ${isDarkMode ? "var(--ion-color-step-200)" : "var(--ion-color-step-150)"}`,
-        }}>
+        <div
+          style={{
+            width: "56px",
+            height: "56px",
+            borderRadius: "6px",
+            overflow: "hidden",
+            backgroundColor: isDarkMode
+              ? "var(--ion-color-step-100)"
+              : "var(--ion-color-step-50)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            border: `1px solid ${
+              isDarkMode
+                ? "var(--ion-color-step-200)"
+                : "var(--ion-color-step-150)"
+            }`,
+          }}
+        >
           {metadata?.ImageUri ? (
             <img
               src={`data:image/png;base64,${metadata.ImageUri}`}
@@ -552,63 +760,85 @@ const FilesPage: React.FC = () => {
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover"
+                objectFit: "contain",
               }}
             />
           ) : (
-            <IonIcon 
-              icon={layers} 
-              style={{ 
-                fontSize: "24px", 
-                color: isDarkMode ? "var(--ion-color-step-400)" : "var(--ion-color-step-500)"
+            <IonIcon
+              icon={layers}
+              style={{
+                fontSize: "24px",
+                color: isDarkMode
+                  ? "var(--ion-color-step-400)"
+                  : "var(--ion-color-step-500)",
               }}
             />
           )}
         </div>
-        
+
         {/* Template Info */}
         <div style={{ flex: 1 }}>
-          <h3 style={{ 
-            margin: "0 0 4px 0", 
-            fontSize: "15px", 
-            fontWeight: "600",
-            color: isDarkMode ? "var(--ion-color-step-750)" : "var(--ion-color-step-650)",
-            lineHeight: "1.3"
-          }}>
-            {metadata?.name || template.template}
+          <h3
+            style={{
+              margin: "0 0 4px 0",
+              fontSize: "15px",
+              fontWeight: "600",
+              color: isDarkMode
+                ? "var(--ion-color-step-750)"
+                : "var(--ion-color-step-650)",
+              lineHeight: "1.3",
+            }}
+          >
+            {templateName}
           </h3>
-          <p style={{ 
-            margin: "0 0 6px 0", 
-            fontSize: "12px", 
-            color: isDarkMode ? "var(--ion-color-step-500)" : "var(--ion-color-step-450)",
-            fontWeight: "400"
-          }}>
-            {template.footers.length} footer{template.footers.length !== 1 ? 's' : ''}
+          <p
+            style={{
+              margin: "0 0 6px 0",
+              fontSize: "12px",
+              color: isDarkMode
+                ? "var(--ion-color-step-500)"
+                : "var(--ion-color-step-450)",
+              fontWeight: "400",
+            }}
+          >
+            {footers.length} footer{footers.length !== 1 ? "s" : ""}
           </p>
           {/* Category Badge */}
-          <div style={{ 
-            fontSize: "10px", 
-            padding: "2px 6px", 
-            borderRadius: "4px", 
-            display: "inline-block",
-            fontWeight: "500",
-            letterSpacing: "0.3px",
-            backgroundColor: isDarkMode ? "var(--ion-color-step-150)" : "var(--ion-color-step-100)",
-            color: isDarkMode ? "var(--ion-color-step-600)" : "var(--ion-color-step-500)",
-            border: `1px solid ${isDarkMode ? "var(--ion-color-step-200)" : "var(--ion-color-step-150)"}`,
-            textTransform: "uppercase"
-          }}>
+          <div
+            style={{
+              fontSize: "10px",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              display: "inline-block",
+              fontWeight: "500",
+              letterSpacing: "0.3px",
+              backgroundColor: isDarkMode
+                ? "var(--ion-color-step-150)"
+                : "var(--ion-color-step-100)",
+              color: isDarkMode
+                ? "var(--ion-color-step-600)"
+                : "var(--ion-color-step-500)",
+              border: `1px solid ${
+                isDarkMode
+                  ? "var(--ion-color-step-200)"
+                  : "var(--ion-color-step-150)"
+              }`,
+              textTransform: "uppercase",
+            }}
+          >
             {category}
           </div>
         </div>
-        
+
         {/* Arrow Icon */}
-        <IonIcon 
-          icon={chevronForward} 
-          style={{ 
-            fontSize: "18px", 
-            color: isDarkMode ? "var(--ion-color-step-400)" : "var(--ion-color-step-350)",
-            opacity: 0.7
+        <IonIcon
+          icon={chevronForward}
+          style={{
+            fontSize: "18px",
+            color: isDarkMode
+              ? "var(--ion-color-step-400)"
+              : "var(--ion-color-step-350)",
+            opacity: 0.7,
           }}
         />
       </div>
@@ -626,27 +856,27 @@ const FilesPage: React.FC = () => {
               fontWeight: "400",
             }}
           >
-            <img 
-              src="/favicon.png" 
-              alt="Invoice App" 
-              style={{ 
-                width: "24px", 
+            <img
+              src="/favicon.png"
+              alt="Invoice App"
+              style={{
+                width: "24px",
                 height: "24px",
-                objectFit: "contain"
-              }} 
-            />
-            {" "}Invoice App
+                objectFit: "contain",
+              }}
+            />{" "}
+            Invoice App
           </IonTitle>
           <IonButtons slot="end">
-            <IonButton 
-              fill="clear" 
+            <IonButton
+              fill="clear"
               onClick={toggleDarkMode}
               style={{ fontSize: "1.2em" }}
             >
               <IonIcon icon={isDarkMode ? sunny : moon} />
             </IonButton>
-            <IonButton 
-              fill="clear" 
+            <IonButton
+              fill="clear"
               onClick={() => history.push("/app/settings")}
               style={{ fontSize: "1.2em" }}
             >
@@ -657,24 +887,36 @@ const FilesPage: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen>
         {/* Template Creation Section */}
-        <div style={{ 
-          padding: isSmallScreen ? "16px 16px 0 16px" : "16px",
-          background: isDarkMode ? "var(--ion-color-step-50)" : "var(--ion-color-step-25)",
-          borderBottom: `1px solid ${isDarkMode ? "var(--ion-color-step-200)" : "var(--ion-color-step-150)"}`,
-          marginBottom: "8px"
-        }}>
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: isSmallScreen ? "16px" : "20px"
-          }}>
-            <h2 style={{ 
-              margin: "0", 
-              fontSize: isSmallScreen ? "18px" : "20px", 
-              fontWeight: "600",
-              color: "var(--ion-color-dark)"
-            }}>
+        <div
+          style={{
+            padding: isSmallScreen ? "16px 16px 0 16px" : "16px",
+            background: isDarkMode
+              ? "var(--ion-color-step-50)"
+              : "var(--ion-color-step-25)",
+            borderBottom: `1px solid ${
+              isDarkMode
+                ? "var(--ion-color-step-200)"
+                : "var(--ion-color-step-150)"
+            }`,
+            marginBottom: "8px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: isSmallScreen ? "16px" : "20px",
+            }}
+          >
+            <h2
+              style={{
+                margin: "0",
+                fontSize: isSmallScreen ? "18px" : "20px",
+                fontWeight: "600",
+                color: "var(--ion-color-dark)",
+              }}
+            >
               Create New File
             </h2>
           </div>
@@ -682,14 +924,16 @@ const FilesPage: React.FC = () => {
           {/* Desktop: Template Cards - Show only first 3 */}
           {!isSmallScreen && (
             <>
-              <div style={{ 
-                display: "grid", 
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", 
-                gap: "16px",
-                marginBottom: "16px",
-                maxWidth: "1200px",
-                margin: "0 auto 16px auto"
-              }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: "16px",
+                  marginBottom: "16px",
+                  maxWidth: "1200px",
+                  margin: "0 auto 16px auto",
+                }}
+              >
                 {getAvailableTemplates()
                   .slice(0, 3)
                   .map((template) => {
@@ -697,7 +941,9 @@ const FilesPage: React.FC = () => {
                     return (
                       <div
                         key={template.templateId}
-                        onClick={() => handleTemplateSelect(template.templateId)}
+                        onClick={() =>
+                          handleTemplateSelect(template.templateId)
+                        }
                         style={{
                           border: "2px solid var(--ion-color-light)",
                           borderRadius: "12px",
@@ -708,32 +954,38 @@ const FilesPage: React.FC = () => {
                           display: "flex",
                           alignItems: "center",
                           gap: "16px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                         }}
                         onMouseOver={(e) => {
-                          e.currentTarget.style.borderColor = "var(--ion-color-primary)";
+                          e.currentTarget.style.borderColor =
+                            "var(--ion-color-primary)";
                           e.currentTarget.style.transform = "translateY(-4px)";
-                          e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
+                          e.currentTarget.style.boxShadow =
+                            "0 8px 24px rgba(0,0,0,0.15)";
                         }}
                         onMouseOut={(e) => {
-                          e.currentTarget.style.borderColor = "var(--ion-color-light)";
+                          e.currentTarget.style.borderColor =
+                            "var(--ion-color-light)";
                           e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                          e.currentTarget.style.boxShadow =
+                            "0 2px 8px rgba(0,0,0,0.1)";
                         }}
                       >
                         {/* Template Image */}
-                        <div style={{
-                          width: "80px",
-                          height: "80px",
-                          borderRadius: "8px",
-                          overflow: "hidden",
-                          backgroundColor: "var(--ion-color-light)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                          border: "1px solid var(--ion-color-medium-tint)"
-                        }}>
+                        <div
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            backgroundColor: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            border: "1px solid var(--ion-color-medium-tint)",
+                          }}
+                        >
                           {metadata?.ImageUri ? (
                             <img
                               src={`data:image/png;base64,${metadata.ImageUri}`}
@@ -741,43 +993,50 @@ const FilesPage: React.FC = () => {
                               style={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "cover"
+                                objectFit: "contain",
                               }}
                             />
                           ) : (
-                            <IonIcon 
-                              icon={layers} 
-                              style={{ fontSize: "32px", color: "var(--ion-color-medium)" }}
+                            <IonIcon
+                              icon={layers}
+                              style={{
+                                fontSize: "32px",
+                                color: "var(--ion-color-medium)",
+                              }}
                             />
                           )}
                         </div>
-                        
+
                         {/* Template Info */}
                         <div style={{ flex: 1 }}>
-                          <h3 style={{ 
-                            margin: "0 0 8px 0", 
-                            fontSize: "18px", 
-                            fontWeight: "600",
-                            color: "var(--ion-color-dark)"
-                          }}>
+                          <h3
+                            style={{
+                              margin: "0 0 8px 0",
+                              fontSize: "18px",
+                              fontWeight: "600",
+                              color: "var(--ion-color-dark)",
+                            }}
+                          >
                             {metadata?.name || template.template}
                           </h3>
-                          <p style={{ 
-                            margin: "0", 
-                            fontSize: "14px", 
-                            color: "var(--ion-color-medium)"
-                          }}>
+                          <p
+                            style={{
+                              margin: "0",
+                              fontSize: "14px",
+                              color: "var(--ion-color-medium)",
+                            }}
+                          >
                             {template.footers.length} footer(s)
                           </p>
                         </div>
-                        
+
                         {/* Arrow Icon */}
-                        <IonIcon 
-                          icon={chevronForward} 
-                          style={{ 
-                            fontSize: "20px", 
+                        <IonIcon
+                          icon={chevronForward}
+                          style={{
+                            fontSize: "20px",
                             color: "var(--ion-color-medium)",
-                            opacity: 0.7
+                            opacity: 0.7,
                           }}
                         />
                       </div>
@@ -798,63 +1057,76 @@ const FilesPage: React.FC = () => {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "16px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.borderColor = "var(--ion-color-primary)";
+                    e.currentTarget.style.borderColor =
+                      "var(--ion-color-primary)";
                     e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.boxShadow =
+                      "0 8px 24px rgba(0,0,0,0.1)";
                   }}
                   onMouseOut={(e) => {
-                    e.currentTarget.style.borderColor = "var(--ion-color-light)";
+                    e.currentTarget.style.borderColor =
+                      "var(--ion-color-light)";
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
+                    e.currentTarget.style.boxShadow =
+                      "0 2px 8px rgba(0,0,0,0.05)";
                   }}
                 >
                   {/* Plus Icon */}
-                  <div style={{
-                    width: "80px",
-                    height: "80px",
-                    borderRadius: "8px",
-                    backgroundColor: "var(--ion-color-light)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    border: "1px solid var(--ion-color-medium-tint)"
-                  }}>
-                    <IonIcon 
-                      icon={add} 
-                      style={{ fontSize: "40px", color: "var(--ion-color-medium)" }}
+                  <div
+                    style={{
+                      width: "80px",
+                      height: "80px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--ion-color-light)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      border: "1px solid var(--ion-color-medium-tint)",
+                    }}
+                  >
+                    <IonIcon
+                      icon={add}
+                      style={{
+                        fontSize: "40px",
+                        color: "var(--ion-color-medium)",
+                      }}
                     />
                   </div>
-                  
+
                   {/* More Info */}
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ 
-                      margin: "0 0 8px 0", 
-                      fontSize: "18px", 
-                      fontWeight: "600",
-                      color: "var(--ion-color-dark)"
-                    }}>
+                    <h3
+                      style={{
+                        margin: "0 0 8px 0",
+                        fontSize: "18px",
+                        fontWeight: "600",
+                        color: "var(--ion-color-dark)",
+                      }}
+                    >
                       More Templates
                     </h3>
-                    <p style={{ 
-                      margin: "0", 
-                      fontSize: "14px", 
-                      color: "var(--ion-color-medium)"
-                    }}>
+                    <p
+                      style={{
+                        margin: "0",
+                        fontSize: "14px",
+                        color: "var(--ion-color-medium)",
+                      }}
+                    >
                       View all available templates
                     </p>
                   </div>
-                  
+
                   {/* Arrow Icon */}
-                  <IonIcon 
-                    icon={chevronForward} 
-                    style={{ 
-                      fontSize: "20px", 
+                  <IonIcon
+                    icon={chevronForward}
+                    style={{
+                      fontSize: "20px",
                       color: "var(--ion-color-medium)",
-                      opacity: 0.7
+                      opacity: 0.7,
                     }}
                   />
                 </div>
@@ -864,14 +1136,14 @@ const FilesPage: React.FC = () => {
 
           {/* Mobile: Show template previews */}
           {isSmallScreen && (
-            <div 
+            <div
               className="template-preview-scroll"
               style={{
                 display: "flex",
                 gap: "12px",
                 overflowX: "auto",
                 paddingBottom: "16px",
-                paddingRight: "4px" // Add some padding for scroll
+                paddingRight: "4px", // Add some padding for scroll
               }}
             >
               {getAvailableTemplates()
@@ -885,32 +1157,46 @@ const FilesPage: React.FC = () => {
                       style={{
                         minWidth: "110px",
                         width: "110px",
-                        border: `1px solid ${isDarkMode ? "var(--ion-color-step-200)" : "var(--ion-color-step-150)"}`,
+                        border: `1px solid ${
+                          isDarkMode
+                            ? "var(--ion-color-step-200)"
+                            : "var(--ion-color-step-150)"
+                        }`,
                         borderRadius: "8px",
                         padding: "12px",
                         cursor: "pointer",
-                        backgroundColor: isDarkMode ? "var(--ion-color-step-50)" : "var(--ion-background-color)",
+                        backgroundColor: isDarkMode
+                          ? "var(--ion-color-step-50)"
+                          : "var(--ion-background-color)",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         gap: "8px",
                         transition: "all 0.2s ease",
                         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                        flexShrink: 0 // Prevent cards from shrinking
+                        flexShrink: 0, // Prevent cards from shrinking
                       }}
                     >
                       {/* Template Image */}
-                      <div style={{
-                        width: "60px",
-                        height: "60px",
-                        borderRadius: "6px",
-                        overflow: "hidden",
-                        backgroundColor: isDarkMode ? "var(--ion-color-step-100)" : "var(--ion-color-step-50)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        border: `1px solid ${isDarkMode ? "var(--ion-color-step-200)" : "var(--ion-color-step-150)"}`,
-                      }}>
+                      <div
+                        style={{
+                          width: "60px",
+                          height: "60px",
+                          borderRadius: "6px",
+                          overflow: "hidden",
+                          backgroundColor: isDarkMode
+                            ? "var(--ion-color-step-100)"
+                            : "var(--ion-color-step-50)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          border: `1px solid ${
+                            isDarkMode
+                              ? "var(--ion-color-step-200)"
+                              : "var(--ion-color-step-150)"
+                          }`,
+                        }}
+                      >
                         {metadata?.ImageUri ? (
                           <img
                             src={`data:image/png;base64,${metadata.ImageUri}`}
@@ -918,46 +1204,56 @@ const FilesPage: React.FC = () => {
                             style={{
                               width: "100%",
                               height: "100%",
-                              objectFit: "cover"
+                              objectFit: "cover",
                             }}
                           />
                         ) : (
-                          <IonIcon 
-                            icon={layers} 
-                            style={{ 
-                              fontSize: "22px", 
-                              color: isDarkMode ? "var(--ion-color-step-400)" : "var(--ion-color-step-500)"
+                          <IonIcon
+                            icon={layers}
+                            style={{
+                              fontSize: "22px",
+                              color: isDarkMode
+                                ? "var(--ion-color-step-400)"
+                                : "var(--ion-color-step-500)",
                             }}
                           />
                         )}
                       </div>
-                      
+
                       {/* Template Name */}
                       <div style={{ textAlign: "center", width: "100%" }}>
-                        <h4 style={{ 
-                          margin: "0", 
-                          fontSize: "11px", 
-                          fontWeight: "600",
-                          color: isDarkMode ? "var(--ion-color-step-700)" : "var(--ion-color-step-600)",
-                          lineHeight: "1.2",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }}>
+                        <h4
+                          style={{
+                            margin: "0",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            color: isDarkMode
+                              ? "var(--ion-color-step-700)"
+                              : "var(--ion-color-step-600)",
+                            lineHeight: "1.2",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {metadata?.name || template.template}
                         </h4>
                       </div>
                     </div>
                   );
                 })}
-              
+
               {/* Plus icon card to show more templates */}
               <div
                 onClick={() => setShowTemplateModal(true)}
                 style={{
                   minWidth: "110px",
                   width: "110px",
-                  border: `2px dashed ${isDarkMode ? "var(--ion-color-step-300)" : "var(--ion-color-step-200)"}`,
+                  border: `2px dashed ${
+                    isDarkMode
+                      ? "var(--ion-color-step-300)"
+                      : "var(--ion-color-step-200)"
+                  }`,
                   borderRadius: "8px",
                   padding: "12px",
                   cursor: "pointer",
@@ -968,35 +1264,45 @@ const FilesPage: React.FC = () => {
                   justifyContent: "center",
                   gap: "8px",
                   transition: "all 0.2s ease",
-                  flexShrink: 0 // Prevent card from shrinking
+                  flexShrink: 0, // Prevent card from shrinking
                 }}
               >
-                <div style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: isDarkMode ? "var(--ion-color-step-100)" : "var(--ion-color-step-50)",
-                }}>
-                  <IonIcon 
-                    icon={add} 
-                    style={{ 
-                      fontSize: "28px", 
-                      color: isDarkMode ? "var(--ion-color-step-500)" : "var(--ion-color-step-400)"
+                <div
+                  style={{
+                    width: "60px",
+                    height: "60px",
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: isDarkMode
+                      ? "var(--ion-color-step-100)"
+                      : "var(--ion-color-step-50)",
+                  }}
+                >
+                  <IonIcon
+                    icon={add}
+                    style={{
+                      fontSize: "28px",
+                      color: isDarkMode
+                        ? "var(--ion-color-step-500)"
+                        : "var(--ion-color-step-400)",
                     }}
                   />
                 </div>
-                
+
                 <div style={{ textAlign: "center", width: "100%" }}>
-                  <h4 style={{ 
-                    margin: "0", 
-                    fontSize: "11px", 
-                    fontWeight: "600",
-                    color: isDarkMode ? "var(--ion-color-step-600)" : "var(--ion-color-step-500)",
-                    lineHeight: "1.2"
-                  }}>
+                  <h4
+                    style={{
+                      margin: "0",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      color: isDarkMode
+                        ? "var(--ion-color-step-600)"
+                        : "var(--ion-color-step-500)",
+                      lineHeight: "1.2",
+                    }}
+                  >
                     More
                   </h4>
                 </div>
@@ -1015,7 +1321,7 @@ const FilesPage: React.FC = () => {
         {/* Template Modal for small screens */}
         {renderTemplateModal()}
       </IonContent>
-      
+
       <IonToast
         isOpen={showToast}
         onDidDismiss={() => setShowToast(false)}
@@ -1026,54 +1332,44 @@ const FilesPage: React.FC = () => {
       />
 
       {/* File Name Prompt Alert Wrapper */}
-      {showFileNamePrompt && selectedTemplateForFile !== null && getTemplateMetadata(selectedTemplateForFile) && (
-        <IonAlert
-          animated
-          isOpen={true}
-          onDidDismiss={() => {
-            setShowFileNamePrompt(false);
-            setSelectedTemplateForFile(null);
-            setNewFileName("");
-          }}
-          header="Create New File"
-          message={`Create a new ${getTemplateMetadata(selectedTemplateForFile)?.name} file`}
-          inputs={[
-            {
-              name: "filename",
-              type: "text",
-              value: newFileName,
-              placeholder: "Enter file name",
-            },
-          ]}
-          buttons={[
-            {
-              text: "Cancel",
-              role: "cancel",
-              handler: () => {
-                setSelectedTemplateForFile(null);
-                console.log("File creation cancelled");
-                setNewFileName("");
+      {showFileNamePrompt &&
+        selectedTemplateForFile !== null &&
+        getTemplateMetadata(selectedTemplateForFile) && (
+          <IonAlert
+            animated
+            isOpen={true}
+            onDidDismiss={() => {
+              setShowFileNamePrompt(false);
+              setSelectedTemplateForFile(null);
+              setNewFileName("");
+            }}
+            header="Create New File"
+            message={`Create a new ${
+              getTemplateMetadata(selectedTemplateForFile)?.name
+            } file`}
+            inputs={[
+              {
+                name: "filename",
+                type: "text",
+                value: newFileName,
+                placeholder: "Enter file name",
               },
-            },
-            {
-              text: "Create",
-              handler: async (data) => {
-                const fileName = data.filename?.trim();
-                if (!fileName) {
-                  setToastMessage("Please enter a file name");
-                  setShowToast(true);
-                  // Clear the filename and close the alert when validation fails
-                  setNewFileName("");
-                  setShowFileNamePrompt(false);
+            ]}
+            buttons={[
+              {
+                text: "Cancel",
+                role: "cancel",
+                handler: () => {
                   setSelectedTemplateForFile(null);
-                  return false; // Prevent alert from closing automatically
-                }
-                
-                if (selectedTemplateForFile) {
-                  // Validate the filename before creating
-                  const validation = await _validateName(fileName);
-                  if (!validation.isValid) {
-                    setToastMessage(validation.message);
+                  setNewFileName("");
+                },
+              },
+              {
+                text: "Create",
+                handler: async (data) => {
+                  const fileName = data.filename?.trim();
+                  if (!fileName) {
+                    setToastMessage("Please enter a file name");
                     setShowToast(true);
                     // Clear the filename and close the alert when validation fails
                     setNewFileName("");
@@ -1081,17 +1377,33 @@ const FilesPage: React.FC = () => {
                     setSelectedTemplateForFile(null);
                     return false; // Prevent alert from closing automatically
                   }
-                  
-                  // If validation passes, create the file
-                  await createNewFileWithTemplate(selectedTemplateForFile, fileName);
-                  return true; // Allow alert to close
-                }
-                return false;
+
+                  if (selectedTemplateForFile) {
+                    // Validate the filename before creating
+                    const validation = await _validateName(fileName);
+                    if (!validation.isValid) {
+                      setToastMessage(validation.message);
+                      setShowToast(true);
+                      // Clear the filename and close the alert when validation fails
+                      setNewFileName("");
+                      setShowFileNamePrompt(false);
+                      setSelectedTemplateForFile(null);
+                      return false; // Prevent alert from closing automatically
+                    }
+
+                    // If validation passes, create the file
+                    await createNewFileWithTemplate(
+                      selectedTemplateForFile,
+                      fileName
+                    );
+                    return true; // Allow alert to close
+                  }
+                  return false;
+                },
               },
-            },
-          ]}
-        />
-      )}
+            ]}
+          />
+        )}
     </IonPage>
   );
 };

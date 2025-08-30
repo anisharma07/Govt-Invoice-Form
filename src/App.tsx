@@ -1,24 +1,16 @@
-import {
-  IonApp,
-  IonRouterOutlet,
-  setupIonicReact,
-} from "@ionic/react";
+import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
 import { Route, Redirect } from "react-router-dom";
 import Home from "./pages/Home";
 import FilesPage from "./pages/FilesPage";
 import SettingsPage from "./pages/SettingsPage";
 import LandingPage from "./pages/LandingPage";
-import DynamicFormDemo from "./components/DynamicFormDemo";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { InvoiceProvider } from "./contexts/InvoiceContext";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import OfflineIndicator from "./components/OfflineIndicator";
 import { usePWA } from "./hooks/usePWA";
 import { isNewUser } from "./utils/helper";
-import { TemplateInitializer } from "./utils/templateInitializer";
-import { useEffect } from "react";
-
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
 
@@ -46,33 +38,13 @@ const AppContent: React.FC = () => {
   const { isOnline } = usePWA();
   const showLandingPage = isNewUser();
 
-  // Initialize multi-template architecture
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        const isInitialized = await TemplateInitializer.isInitialized();
-        if (!isInitialized) {
-          await TemplateInitializer.initializeApp();
-        }
-      } catch (error) {
-        console.error('Failed to initialize template system:', error);
-      }
-    };
-
-    initializeApp();
-  }, []);
-
   return (
     <IonApp className={isDarkMode ? "dark-theme" : "light-theme"}>
       <InvoiceProvider>
         <IonReactRouter>
           <IonRouterOutlet>
             <Route exact path="/">
-              {showLandingPage ? (
-                <LandingPage />
-              ) : (
-                <Redirect to="/app/files" />
-              )}
+              {showLandingPage ? <LandingPage /> : <Redirect to="/app/files" />}
             </Route>
             <Route path="/app">
               {!isOnline && <OfflineIndicator />}
@@ -88,9 +60,6 @@ const AppContent: React.FC = () => {
                 </Route>
                 <Route exact path="/app/settings">
                   <SettingsPage />
-                </Route>
-                <Route exact path="/app/demo">
-                  <DynamicFormDemo />
                 </Route>
                 <Route exact path="/app">
                   <Redirect to="/app/files" />

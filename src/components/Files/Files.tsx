@@ -68,8 +68,7 @@ import {
   isQuotaExceededError,
   getQuotaExceededMessage,
 } from "../../utils/helper";
-import { TemplateManager } from "../../utils/templateManager";
-import { TemplateInitializer } from "../../utils/templateInitializer";
+import { tempMeta } from "../../templates-meta";
 
 const Files: React.FC<{
   store: Local;
@@ -77,8 +76,12 @@ const Files: React.FC<{
   updateSelectedFile: Function;
   updateBillType: Function;
 }> = (props) => {
-  const { selectedFile, updateSelectedFile, activeTemplateData, updateActiveTemplateData } =
-    useInvoice();
+  const {
+    selectedFile,
+    updateSelectedFile,
+    activeTemplateData,
+    updateActiveTemplateData,
+  } = useInvoice();
   const { isDarkMode } = useTheme();
   const history = useHistory();
 
@@ -114,47 +117,27 @@ const Files: React.FC<{
 
   // Template helper functions
   const getAvailableTemplates = () => {
-    return TemplateInitializer.getAllTemplates();
+    // map tempMeta.template_id and tempMeta.tempate_name with templateId and template resp
+    return tempMeta.map((template) => ({
+      templateId: template.template_id,
+      template: template.name,
+      ImageUri: template.ImageUri,
+    }));
   };
 
   const getTemplateInfo = (templateId: number) => {
-    const template = TemplateInitializer.getTemplate(templateId);
+    const template = DATA[templateId];
     return template ? template.template : `Template ${templateId}`;
   };
 
-  
   // Edit local file
-  const editFile = async (key: string) => {
-    try {
-      console.log("Opening file:", key);
-
-
-      // Clear any existing context state to prevent conflicts with old state
-      const fileData = await props.store._getFile(key);
-      const templateId = fileData?.templateId || 1;
-      const templateData = DATA[templateId];
-      if (!templateData) {
-        setToastMessage("Template not found");
-        setShowToast(true);
-        return;
-      }
-      updateSelectedFile(key);
-      updateActiveTemplateData(templateData);
-      
-
-      // Optional: Show loading feedback
-      setToastMessage(`Opening ${key}...`);
-      setShowToast(true);
-      // Small delay to ensure context is cleared before navigation
-      setTimeout(() => {
-         history.push(`/app/editor/${encodeURIComponent(key)}`);
-      }, 10);
-      
-    } catch (error) {
-      console.error("Error in editFile:", error);
-      setToastMessage("Failed to navigate to editor");
-      setShowToast(true);
-    }
+  const editFile = (key: string) => {
+    // Create a temporary anchor element to navigate
+    setTimeout(() => {
+      const link = document.createElement("a");
+      link.href = `/app/editor/${key}`;
+      link.click();
+    }, 50);
   };
 
   // Delete file
@@ -381,14 +364,15 @@ const Files: React.FC<{
         // Get the existing file data
         const fileData = await props.store._getFile(currentRenameKey);
 
-        // Create a new file with the new name
+        // Create a new file with the new name, preserving all original metadata including templateId
         const renamedFile = new LocalFile(
           fileData.created, // Keep the original creation date
           new Date().toISOString(), // Use ISO string for modified date
           fileData.content,
           newFileName,
           fileData.billType,
-          fileData.isPasswordProtected,
+          fileData.templateId || fileData.billType, // Preserve templateId, fallback to billType for backward compatibility
+          fileData.isEncrypted || false,
           fileData.password
         );
 
@@ -414,8 +398,6 @@ const Files: React.FC<{
         setRenameFileName("");
         setShowRenameAlert(false);
       } catch (error) {
-        console.error("Error renaming file:", error);
-
         // Check if the error is due to storage quota exceeded
         if (isQuotaExceededError(error)) {
           setToastMessage(getQuotaExceededMessage("renaming files"));
@@ -442,36 +424,32 @@ const Files: React.FC<{
     if (fileSource === "local") {
       const localFiles = await props.store._getAllFiles();
 
-      const filesArray = Object.keys(localFiles)
-        .map((key) => {
-          const fileData = localFiles[key];
+      const filesArray = Object.keys(localFiles).map((key) => {
+        const fileData = localFiles[key];
 
-          // Ensure dates are properly converted - handle both ISO strings and Date.toString() formats
-          let createdDate = fileData.created;
-          let modifiedDate = fileData.modified;
+        // Ensure dates are properly converted - handle both ISO strings and Date.toString() formats
+        let createdDate = fileData.created;
+        let modifiedDate = fileData.modified;
 
-          // If the date looks like a Date.toString() format, try to parse it
-          // Date.toString() typically looks like "Mon Jul 06 2025 10:30:00 GMT+0000 (UTC)"
-          if (typeof createdDate === "string" && createdDate.includes("GMT")) {
-            createdDate = new Date(createdDate).toISOString();
-          }
-          if (
-            typeof modifiedDate === "string" &&
-            modifiedDate.includes("GMT")
-          ) {
-            modifiedDate = new Date(modifiedDate).toISOString();
-          }
+        // If the date looks like a Date.toString() format, try to parse it
+        // Date.toString() typically looks like "Mon Jul 06 2025 10:30:00 GMT+0000 (UTC)"
+        if (typeof createdDate === "string" && createdDate.includes("GMT")) {
+          createdDate = new Date(createdDate).toISOString();
+        }
+        if (typeof modifiedDate === "string" && modifiedDate.includes("GMT")) {
+          modifiedDate = new Date(modifiedDate).toISOString();
+        }
 
-          return {
-            key,
-            name: key,
-            date: modifiedDate, // For backward compatibility
-            dateCreated: createdDate,
-            dateModified: modifiedDate,
-            type: "local",
-            templateMetadata: fileData.templateMetadata || null,
-          };
-        });
+        return {
+          key,
+          name: key,
+          date: modifiedDate, // For backward compatibility
+          dateCreated: createdDate,
+          dateModified: modifiedDate,
+          type: "local",
+          templateMetadata: fileData.templateMetadata || null,
+        };
+      });
 
       // Filter by template if a specific template is selected
       let filteredFiles = filesArray;
@@ -488,7 +466,9 @@ const Files: React.FC<{
         const emptyMessage = searchQuery.trim()
           ? `No files found matching "${searchQuery}"`
           : selectedTemplateFilter !== "all"
-          ? `No files found for ${getTemplateInfo(selectedTemplateFilter as number)}`
+          ? `No files found for ${getTemplateInfo(
+              selectedTemplateFilter as number
+            )}`
           : "No local files found";
 
         content = (
@@ -521,12 +501,25 @@ const Files: React.FC<{
                       className="file-icon document-icon"
                     />
                     <IonLabel className="mobile-file-label">
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          marginBottom: "2px",
+                        }}
+                      >
                         <h3 style={{ margin: "0" }}>{file.name}</h3>
                         {file.templateMetadata && (
-                          <IonChip color="primary" outline className="template-chip">
+                          <IonChip
+                            color="primary"
+                            outline
+                            className="template-chip"
+                          >
                             <IonIcon icon={layers} />
-                            <IonLabel>{file.templateMetadata.template}</IonLabel>
+                            <IonLabel>
+                              {file.templateMetadata.template}
+                            </IonLabel>
                           </IonChip>
                         )}
                       </div>
@@ -610,12 +603,25 @@ const Files: React.FC<{
                           className="file-icon document-icon"
                         />
                         <IonLabel className="mobile-file-label">
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              marginBottom: "2px",
+                            }}
+                          >
                             <h3 style={{ margin: "0" }}>{file.name}</h3>
                             {file.templateMetadata && (
-                              <IonChip color="primary" outline className="template-chip">
+                              <IonChip
+                                color="primary"
+                                outline
+                                className="template-chip"
+                              >
                                 <IonIcon icon={layers} />
-                                <IonLabel>{file.templateMetadata.template}</IonLabel>
+                                <IonLabel>
+                                  {file.templateMetadata.template}
+                                </IonLabel>
                               </IonChip>
                             )}
                           </div>
@@ -673,7 +679,14 @@ const Files: React.FC<{
   useEffect(() => {
     renderFileList();
     // eslint-disable-next-line
-  }, [props.file, fileSource, searchQuery, sortBy, serverFilesLoading, selectedTemplateFilter]);
+  }, [
+    props.file,
+    fileSource,
+    searchQuery,
+    sortBy,
+    serverFilesLoading,
+    selectedTemplateFilter,
+  ]);
 
   // Check screen size
   useEffect(() => {
@@ -682,8 +695,8 @@ const Files: React.FC<{
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   // Reset sort option when switching file sources to ensure compatibility
@@ -730,7 +743,7 @@ const Files: React.FC<{
                 debounce={300}
                 style={{ flex: "2", minWidth: "200px" }}
               />
-              
+
               {/* Template Filter */}
               <div
                 style={{
@@ -743,13 +756,18 @@ const Files: React.FC<{
               >
                 <IonIcon
                   icon={layers}
-                  style={{ marginRight: isSmallScreen ? "0" : "4px", fontSize: "16px" }}
+                  style={{
+                    marginRight: isSmallScreen ? "0" : "4px",
+                    fontSize: "16px",
+                  }}
                 />
                 {!isSmallScreen && (
                   <IonSelect
                     value={selectedTemplateFilter}
                     placeholder="All Templates"
-                    onIonChange={(e) => setSelectedTemplateFilter(e.detail.value)}
+                    onIonChange={(e) =>
+                      setSelectedTemplateFilter(e.detail.value)
+                    }
                     style={{
                       flex: "1",
                       "--placeholder-color": "var(--ion-color-medium)",
@@ -759,7 +777,10 @@ const Files: React.FC<{
                   >
                     <IonSelectOption value="all">All Templates</IonSelectOption>
                     {getAvailableTemplates().map((template) => (
-                      <IonSelectOption key={template.templateId} value={template.templateId}>
+                      <IonSelectOption
+                        key={template.templateId}
+                        value={template.templateId}
+                      >
                         {template.template}
                       </IonSelectOption>
                     ))}
@@ -769,7 +790,9 @@ const Files: React.FC<{
                   <IonSelect
                     value={selectedTemplateFilter}
                     placeholder=""
-                    onIonChange={(e) => setSelectedTemplateFilter(e.detail.value)}
+                    onIonChange={(e) =>
+                      setSelectedTemplateFilter(e.detail.value)
+                    }
                     style={{
                       flex: "1",
                       "--placeholder-color": "var(--ion-color-medium)",
@@ -781,7 +804,10 @@ const Files: React.FC<{
                   >
                     <IonSelectOption value="all">All Templates</IonSelectOption>
                     {getAvailableTemplates().map((template) => (
-                      <IonSelectOption key={template.templateId} value={template.templateId}>
+                      <IonSelectOption
+                        key={template.templateId}
+                        value={template.templateId}
+                      >
                         {template.template}
                       </IonSelectOption>
                     ))}
@@ -800,7 +826,10 @@ const Files: React.FC<{
               >
                 <IonIcon
                   icon={swapVertical}
-                  style={{ marginRight: isSmallScreen ? "0" : "4px", fontSize: "16px" }}
+                  style={{
+                    marginRight: isSmallScreen ? "0" : "4px",
+                    fontSize: "16px",
+                  }}
                 />
                 {!isSmallScreen && (
                   <IonSelect

@@ -40,8 +40,6 @@ import * as AppGeneral from "../components/socialcalc/index";
 import "./FilesPage.css";
 import { useHistory } from "react-router-dom";
 import { File } from "../components/Storage/LocalStorage";
-import { TemplateInitializer } from "../utils/templateInitializer";
-
 const FilesPage: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const {
@@ -84,11 +82,6 @@ const FilesPage: React.FC = () => {
     }
   }, []);
 
-  // Template helper functions
-  const getAvailableTemplates = () => {
-    return TemplateInitializer.getAllTemplates();
-  };
-
   const getTemplateMetadata = (templateId: number) => {
     return tempMeta.find(meta => meta.template_id === templateId);
   };
@@ -107,11 +100,11 @@ const FilesPage: React.FC = () => {
 
   // Get categorized templates
   const getCategorizedTemplates = () => {
-    const templates = getAvailableTemplates();
+    const templates = tempMeta;
     const categorized = {
-      web: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.templateId)?.name || t.template) === 'web'),
-      mobile: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.templateId)?.name || t.template) === 'mobile'),
-      tablet: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.templateId)?.name || t.template) === 'tablet'),
+      web: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.template_id)?.name || t.name) === 'web'),
+      mobile: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.template_id)?.name || t.name) === 'mobile'),
+      tablet: templates.filter(t => categorizeTemplate(getTemplateMetadata(t.template_id)?.name || t.name) === 'tablet'),
     };
     return categorized;
   };
@@ -188,14 +181,15 @@ const FilesPage: React.FC = () => {
         return;
       }
 
-      const templateData = TemplateInitializer.getTemplateData(templateId);
+      const templateData = DATA[templateId];
       if (!templateData) {
         setToastMessage("Template not found");
         setShowToast(true);
         return;
       }
 
-      const mscContent = TemplateInitializer.createMSCContent(templateId);
+      const mscContent = templateData.msc;
+      const jsonMsc = JSON.stringify(mscContent);
       if (!mscContent) {
         setToastMessage("Error creating template content");
         setShowToast(true);
@@ -210,7 +204,7 @@ const FilesPage: React.FC = () => {
       const newFile = new File(
         now,
         now,
-        encodeURIComponent(mscContent), // mscContent is already a JSON string
+        encodeURIComponent(jsonMsc), // mscContent is already a JSON string
         fileName,
         activeFooterIndex,
         templateId,

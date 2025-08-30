@@ -22,7 +22,6 @@ import {
   IonSegmentButton,
   IonFab,
   IonFabButton,
-  IonSpinner,
   isPlatform,
 } from "@ionic/react";
 import { APP_NAME, DATA } from "../templates";
@@ -74,11 +73,9 @@ const Home: React.FC = () => {
   const { selectedFile, billType, store, updateSelectedFile, updateBillType, activeTemplateData, updateActiveTemplateData } =
     useInvoice();
   const history = useHistory();
-  const { fileName } = useParams<{ fileName?: string }>();
 
   const [fileNotFound, setFileNotFound] = useState(false);
   const [templateNotFound, setTemplateNotFound] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
 
   const [showMenu, setShowMenu] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -279,7 +276,6 @@ const Home: React.FC = () => {
     };
   
 const initializeApp = async () => {
-      setIsInitializing(true);
       
       try {
         // Initialize template system first
@@ -290,15 +286,10 @@ const initializeApp = async () => {
 
         // Prioritize URL parameter over context to ensure fresh state
         let fileToLoad=selectedFile;
-        if (!selectedFile || selectedFile.trim() === "") {
-          fileToLoad = fileName;
-          updateSelectedFile(fileName);
-        }
 
         // If no file is specified, redirect to files page
         if (!fileToLoad || fileToLoad === "") {
           // console.log("No file specified, redirecting to files");
-          setIsInitializing(false);
           history.push("/app/files");
           return;
         }
@@ -309,7 +300,6 @@ const initializeApp = async () => {
         if (!fileExists) {
           console.log(`File "${fileToLoad}" not found`);
           setFileNotFound(true);
-          setIsInitializing(false);
           return;
         }
 
@@ -325,7 +315,6 @@ const initializeApp = async () => {
           console.error(`Template ${templateId} not found in templates library`);
           setTemplateNotFound(true);
           setFileNotFound(false);
-          setIsInitializing(false);
           return;
         }
 
@@ -370,7 +359,6 @@ const initializeApp = async () => {
           // Activate footer after initialization
           setTimeout(() => {
             activateFooter(fileData.billType);
-            setIsInitializing(false); // Set loading to false after complete initialization
           }, 500);
         }, 100);
         console.log("success");
@@ -382,7 +370,6 @@ const initializeApp = async () => {
         // On error, show file not found
         setFileNotFound(true);
         setTemplateNotFound(false);
-        setIsInitializing(false);
       }
 };
   
@@ -390,11 +377,6 @@ const initializeApp = async () => {
     initializeApp();
   }, [selectedFile]); // Only depend on selectedFile to prevent loops with selectedFile updates
 
-  useEffect(() => {
-    if (fileName) {
-      updateSelectedFile(fileName);
-    }
-  }, [fileName]);
 
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(
     null
@@ -716,7 +698,7 @@ const initializeApp = async () => {
               lineHeight: "1.5",
               maxWidth: "400px"
             }}>
-              {fileName ? `The file "${fileName}" doesn't exist in your storage.` : "The requested file couldn't be found."}
+              {selectedFile ? `The file "${selectedFile}" doesn't exist in your storage.` : "The requested file couldn't be found."}
             </p>
             <IonButton 
               fill="solid" 
@@ -790,59 +772,11 @@ const initializeApp = async () => {
             </div>
           </div>
         ) : (
-          <div style={{ position: "relative", height: "100%" }}>
-            {/* Loading overlay */}
-            {isInitializing && (
-              <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: isDarkMode ? "var(--ion-background-color)" : "var(--ion-background-color)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 1000,
-                padding: "40px 20px",
-                textAlign: "center"
-              }}>
-                <IonSpinner 
-                  name="crescent" 
-                  style={{ 
-                    fontSize: "60px", 
-                    color: "var(--ion-color-primary)",
-                    marginBottom: "20px"
-                  }}
-                />
-                <h2 style={{ 
-                  margin: "0 0 16px 0", 
-                  color: "var(--ion-color-dark)",
-                  fontSize: "24px",
-                  fontWeight: "600"
-                }}>
-                  Initializing App
-                </h2>
-                <p style={{ 
-                  margin: "0", 
-                  color: "var(--ion-color-medium)",
-                  fontSize: "16px",
-                  lineHeight: "1.5",
-                  maxWidth: "400px"
-                }}>
-                  Please wait while we load your invoice template and prepare the editor...
-                </p>
-              </div>
-            )}
-            
-            {/* SocialCalc container - always rendered */}
             <div id="container">
               <div id="workbookControl"></div>
               <div id="tableeditor"></div>
               <div id="msg"></div>
             </div>
-          </div>
         )}
 
         {/* Toast for save notifications */}

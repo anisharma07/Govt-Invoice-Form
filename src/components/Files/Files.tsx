@@ -122,9 +122,6 @@ const Files: React.FC<{
     return template ? template.template : `Template ${templateId}`;
   };
 
-  const getFileTemplateInfo = (fileData: any) => {
-    return fileData.templateMetadata || null;
-  };
   
   // Edit local file
   const editFile = async (key: string) => {

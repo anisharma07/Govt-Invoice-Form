@@ -12,8 +12,6 @@ import {
   IonButtons,
   IonIcon,
   IonGrid,
-  IonRow,
-  IonCol,
   IonCard,
   IonCardHeader,
   IonCardTitle,
@@ -22,22 +20,21 @@ import {
   IonToast,
   IonItemDivider,
   IonTextarea,
-  IonSelect,
-  IonSelectOption,
   IonChip,
 } from "@ionic/react";
 import { close, save, trash, layers } from "ionicons/icons";
-import { TemplateData } from "../templates";
 import { useInvoice } from "../contexts/InvoiceContext";
 import {
   addInvoiceData,
+  addDynamicInvoiceData,
   clearInvoiceData,
+  clearDynamicInvoiceData,
 } from "./socialcalc/modules/invoice.js";
-import { 
-  DynamicFormManager, 
-  DynamicFormSection, 
+import {
+  DynamicFormManager,
+  DynamicFormSection,
   DynamicFormField,
-  ProcessedFormData 
+  ProcessedFormData,
 } from "../utils/dynamicFormManager";
 import "./InvoiceForm.css";
 
@@ -46,29 +43,36 @@ interface DynamicInvoiceFormProps {
   onClose: () => void;
 }
 
-const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose }) => {
-  const { activeTemplateData } = useInvoice();
-  const [activeFooterIndex, setActiveFooterIndex] = useState<number>(1);
+const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const { activeTemplateData, currentSheetId } = useInvoice();
   const [formData, setFormData] = useState<ProcessedFormData>({});
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [toastColor, setToastColor] = useState<"success" | "danger" | "warning">("success");
+  const [toastColor, setToastColor] = useState<
+    "success" | "danger" | "warning"
+  >("success");
 
   // Get current template data
   const currentTemplate = useMemo(() => {
     return activeTemplateData;
   }, [activeTemplateData]);
 
-  // Get active footer based on activeFooterIndex
-  const activeFooter = useMemo(() => {
-    return currentTemplate?.footers.find(footer => footer.index === activeFooterIndex);
-  }, [currentTemplate, activeFooterIndex]);
+  // Get current sheet ID or fall back to template's current sheet
+  const effectiveSheetId = useMemo(() => {
+    return currentSheetId || currentTemplate?.msc?.currentid || "sheet1";
+  }, [currentSheetId, currentTemplate]);
 
-  // Generate form sections based on cellMappings and active footer
+  // Generate form sections based on cellMappings and current sheet
   const formSections = useMemo(() => {
     if (!currentTemplate) return [];
-    return DynamicFormManager.getFormSectionsForFooter(currentTemplate, activeFooterIndex);
-  }, [currentTemplate, activeFooterIndex]);
+    return DynamicFormManager.getFormSectionsForSheet(
+      currentTemplate,
+      effectiveSheetId
+    );
+  }, [currentTemplate, effectiveSheetId]);
 
   // Initialize form data when form sections change
   useEffect(() => {
@@ -85,46 +89,61 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
     setShowToast(true);
   };
 
-  const handleFieldChange = (sectionTitle: string, fieldLabel: string, value: string) => {
-    setFormData(prev => ({
+  const handleFieldChange = (
+    sectionTitle: string,
+    fieldLabel: string,
+    value: string
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [sectionTitle]: {
         ...prev[sectionTitle],
         [fieldLabel]: value,
-      }
+      },
     }));
   };
 
-  const handleItemChange = (sectionTitle: string, itemIndex: number, fieldName: string, value: string) => {
-    setFormData(prev => ({
+  const handleItemChange = (
+    sectionTitle: string,
+    itemIndex: number,
+    fieldName: string,
+    value: string
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [sectionTitle]: prev[sectionTitle].map((item: any, index: number) => 
+      [sectionTitle]: prev[sectionTitle].map((item: any, index: number) =>
         index === itemIndex ? { ...item, [fieldName]: value } : item
-      )
+      ),
     }));
   };
 
   const handleSave = async () => {
     try {
       // Validate form data
-      const validation = DynamicFormManager.validateFormData(formData, formSections);
+      const validation = DynamicFormManager.validateFormData(
+        formData,
+        formSections
+      );
       if (!validation.isValid) {
-        showToastMessage(`Validation errors: ${validation.errors.join(', ')}`, "warning");
+        showToastMessage(
+          `Validation errors: ${validation.errors.join(", ")}`,
+          "warning"
+        );
         return;
       }
 
       // Convert form data to spreadsheet format
-      const cellData = DynamicFormManager.convertToSpreadsheetFormat(formData, formSections, activeFooterIndex);
-      
-      // Create invoice data object
-      const invoiceData = {
-        templateId: activeTemplateData ? activeTemplateData.templateId : 1,
-        footerIndex: activeFooterIndex,
-        cellData,
-        dynamicData: formData,
-      };
-      
-      await addInvoiceData(invoiceData);
+      const cellData = DynamicFormManager.convertToSpreadsheetFormat(
+        formData,
+        formSections,
+        effectiveSheetId
+      );
+
+      console.log("Cell data to be saved:", cellData);
+      console.log("Effective sheet ID:", effectiveSheetId);
+
+      // Use the new addDynamicInvoiceData function that handles cell references
+      await addDynamicInvoiceData(cellData, effectiveSheetId);
       showToastMessage("Invoice data saved successfully!", "success");
 
       // Close modal after a short delay
@@ -132,6 +151,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
         onClose();
       }, 1500);
     } catch (error) {
+      console.error("Error saving invoice data:", error);
       setToastMessage("Failed to save invoice data. Please try again.");
       setToastColor("danger");
       setShowToast(true);
@@ -140,57 +160,72 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
 
   const handleClear = async () => {
     try {
-      await clearInvoiceData();
+      // Get current cell data to know which cells to clear
+      const cellData = DynamicFormManager.convertToSpreadsheetFormat(
+        formData,
+        formSections,
+        effectiveSheetId
+      );
+
+      await clearDynamicInvoiceData(cellData);
+
       // Reset form data
       const initData = DynamicFormManager.initializeFormData(formSections);
       setFormData(initData);
       showToastMessage("Form data cleared successfully!", "success");
     } catch (error) {
+      console.error("Error clearing form data:", error);
       showToastMessage("Failed to clear form data", "danger");
     }
   };
 
   const renderField = (field: DynamicFormField, sectionTitle: string) => {
     const value = formData[sectionTitle]?.[field.label] || "";
-    
+
     switch (field.type) {
-      case 'textarea':
+      case "textarea":
         return (
           <IonItem key={field.label}>
             <IonLabel position="stacked">{field.label}</IonLabel>
             <IonTextarea
               value={value}
-              onIonInput={(e) => handleFieldChange(sectionTitle, field.label, e.detail.value!)}
+              onIonInput={(e) =>
+                handleFieldChange(sectionTitle, field.label, e.detail.value!)
+              }
               placeholder={`Enter ${field.label.toLowerCase()}`}
               rows={3}
             />
           </IonItem>
         );
-      case 'email':
+      case "email":
         return (
           <IonItem key={field.label}>
             <IonLabel position="stacked">{field.label}</IonLabel>
             <IonInput
               type="email"
               value={value}
-              onIonInput={(e) => handleFieldChange(sectionTitle, field.label, e.detail.value!)}
+              onIonInput={(e) =>
+                handleFieldChange(sectionTitle, field.label, e.detail.value!)
+              }
               placeholder={`Enter ${field.label.toLowerCase()}`}
             />
           </IonItem>
         );
-      case 'number':
+      case "number":
         return (
           <IonItem key={field.label}>
             <IonLabel position="stacked">{field.label}</IonLabel>
             <IonInput
               type="number"
               value={value}
-              onIonInput={(e) => handleFieldChange(sectionTitle, field.label, e.detail.value!)}
+              onIonInput={(e) =>
+                handleFieldChange(sectionTitle, field.label, e.detail.value!)
+              }
               placeholder={`Enter ${field.label.toLowerCase()}`}
             />
           </IonItem>
         );
-      case 'decimal':
+      case "decimal":
         return (
           <IonItem key={field.label}>
             <IonLabel position="stacked">{field.label}</IonLabel>
@@ -198,7 +233,9 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
               type="number"
               step="0.01"
               value={value}
-              onIonInput={(e) => handleFieldChange(sectionTitle, field.label, e.detail.value!)}
+              onIonInput={(e) =>
+                handleFieldChange(sectionTitle, field.label, e.detail.value!)
+              }
               placeholder={`Enter ${field.label.toLowerCase()}`}
             />
           </IonItem>
@@ -209,7 +246,9 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
             <IonLabel position="stacked">{field.label}</IonLabel>
             <IonInput
               value={value}
-              onIonInput={(e) => handleFieldChange(sectionTitle, field.label, e.detail.value!)}
+              onIonInput={(e) =>
+                handleFieldChange(sectionTitle, field.label, e.detail.value!)
+              }
               placeholder={`Enter ${field.label.toLowerCase()}`}
             />
           </IonItem>
@@ -233,18 +272,35 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
               <IonItemDivider>
                 <IonLabel>Item {index + 1}</IonLabel>
               </IonItemDivider>
-              {Object.entries(section.itemsConfig!.content).map(([fieldName, cellColumn]) => (
-                <IonItem key={`${index}-${fieldName}`}>
-                  <IonLabel position="stacked">{fieldName}</IonLabel>
-                  <IonInput
-                    type={DynamicFormManager.getFieldType(fieldName) === 'decimal' ? 'number' : 'text'}
-                    step={DynamicFormManager.getFieldType(fieldName) === 'decimal' ? '0.01' : undefined}
-                    value={item[fieldName] || ""}
-                    onIonInput={(e) => handleItemChange(section.title, index, fieldName, e.detail.value!)}
-                    placeholder={`Enter ${fieldName.toLowerCase()}`}
-                  />
-                </IonItem>
-              ))}
+              {Object.entries(section.itemsConfig!.content).map(
+                ([fieldName, cellColumn]) => (
+                  <IonItem key={`${index}-${fieldName}`}>
+                    <IonLabel position="stacked">{fieldName}</IonLabel>
+                    <IonInput
+                      type={
+                        DynamicFormManager.getFieldType(fieldName) === "decimal"
+                          ? "number"
+                          : "text"
+                      }
+                      step={
+                        DynamicFormManager.getFieldType(fieldName) === "decimal"
+                          ? "0.01"
+                          : undefined
+                      }
+                      value={item[fieldName] || ""}
+                      onIonInput={(e) =>
+                        handleItemChange(
+                          section.title,
+                          index,
+                          fieldName,
+                          e.detail.value!
+                        )
+                      }
+                      placeholder={`Enter ${fieldName.toLowerCase()}`}
+                    />
+                  </IonItem>
+                )
+              )}
             </div>
           ))}
         </IonCardContent>
@@ -264,7 +320,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
         </IonCardHeader>
         <IonCardContent>
           <IonList>
-            {section.fields.map(field => renderField(field, section.title))}
+            {section.fields.map((field) => renderField(field, section.title))}
           </IonList>
         </IonCardContent>
       </IonCard>
@@ -285,7 +341,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
           </IonToolbar>
         </IonHeader>
         <IonContent>
-          <div style={{ padding: '20px', textAlign: 'center' }}>
+          <div style={{ padding: "20px", textAlign: "center" }}>
             <p>No template found for the current selection.</p>
           </div>
         </IonContent>
@@ -318,42 +374,27 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({ isOpen, onClose
         </IonHeader>
 
         <IonContent className="invoice-form-content">
-          {/* Footer Selection */}
-          {currentTemplate.footers.length > 1 && (
+          {/* Sheet Information Display */}
+          {effectiveSheetId && (
             <IonCard>
               <IonCardHeader>
-                <IonCardTitle>Select Footer</IonCardTitle>
+                <IonCardTitle>Current Sheet: {effectiveSheetId}</IonCardTitle>
               </IonCardHeader>
-              <IonCardContent>
-                <IonItem>
-                  <IonLabel>Active Footer</IonLabel>
-                  <IonSelect
-                    value={activeFooterIndex}
-                    onIonChange={(e) => setActiveFooterIndex(e.detail.value)}
-                  >
-                    {currentTemplate.footers.map(footer => (
-                      <IonSelectOption key={footer.index} value={footer.index}>
-                        {footer.name}
-                      </IonSelectOption>
-                    ))}
-                  </IonSelect>
-                </IonItem>
-              </IonCardContent>
             </IonCard>
           )}
 
           {/* Dynamic Form Sections */}
           <IonGrid>
-            {formSections.map(section => renderSection(section))}
+            {formSections.map((section) => renderSection(section))}
           </IonGrid>
 
           {/* Action Buttons */}
-          <div style={{ padding: '20px' }}>
+          <div style={{ padding: "20px" }}>
             <IonButton
               expand="block"
               onClick={handleSave}
               color="primary"
-              style={{ marginBottom: '10px' }}
+              style={{ marginBottom: "10px" }}
             >
               <IonIcon icon={save} slot="start" />
               Save Invoice Data

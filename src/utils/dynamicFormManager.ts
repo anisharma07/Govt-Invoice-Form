@@ -246,13 +246,13 @@ export class DynamicFormManager {
    * Converts form data to spreadsheet format for cell mapping
    * @param formData The form data
    * @param sections The form sections
-   * @param footerIndex The active footer index
+   * @param sheetId The current sheet ID (optional, for future use)
    * @returns Object with cell references and values
    */
   static convertToSpreadsheetFormat(
     formData: ProcessedFormData,
     sections: DynamicFormSection[],
-    footerIndex: number
+    sheetId?: string | number
   ): { [cellRef: string]: any } {
     const cellData: { [cellRef: string]: any } = {};
 
@@ -296,6 +296,22 @@ export class DynamicFormManager {
       template.footers[0] ||
       null
     );
+  }
+
+  /**
+   * Gets form sections based on current sheet ID instead of footer index
+   * @param template The template data
+   * @param sheetId The current sheet ID
+   * @returns Array of form sections for the specified sheet
+   */
+  static getFormSectionsForSheet(
+    template: TemplateData,
+    sheetId: string
+  ): DynamicFormSection[] {
+    const cellMappings = template.cellMappings[sheetId];
+    if (!cellMappings) return [];
+
+    return this.generateFormSections(cellMappings);
   }
 
   /**

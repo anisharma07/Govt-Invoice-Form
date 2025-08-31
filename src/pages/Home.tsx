@@ -55,6 +55,7 @@ import { useHistory, useLocation, useParams } from "react-router-dom";
 import DynamicInvoiceForm from "../components/DynamicInvoiceForm";
 import { isQuotaExceededError, getQuotaExceededMessage } from "../utils/helper";
 import { getAutoSaveEnabled } from "../utils/settings";
+import { SheetChangeMonitor } from "../utils/sheetChangeMonitor";
 import { backgroundClip } from "html2canvas/dist/types/css/property-descriptors/background-clip";
 
 const Home: React.FC = () => {
@@ -67,6 +68,7 @@ const Home: React.FC = () => {
     updateBillType,
     activeTemplateData,
     updateActiveTemplateData,
+    updateCurrentSheetId,
   } = useInvoice();
   const history = useHistory();
 
@@ -566,6 +568,21 @@ const Home: React.FC = () => {
     initializeApp();
   }, [fileName]); // Only depend on fileName to prevent loops with fileName updates
 
+  // Initialize sheet change monitor
+  useEffect(() => {
+    if (fileName && activeTemplateData) {
+      // Wait a bit for SocialCalc to be fully initialized
+      const timer = setTimeout(() => {
+        SheetChangeMonitor.initialize(updateCurrentSheetId);
+      }, 1000);
+
+      return () => {
+        clearTimeout(timer);
+        SheetChangeMonitor.cleanup();
+      };
+    }
+  }, [fileName, activeTemplateData, updateCurrentSheetId]);
+
   useEffect(() => {
     if (fileName) {
       updateSelectedFile(fileName);
@@ -1062,6 +1079,7 @@ const Home: React.FC = () => {
           setShowColorPicker={setShowColorModal}
           onSave={handleSave}
           isAutoSaveEnabled={isAutoSaveEnabled}
+          fileName={fileName}
         />
 
         {/* Color Picker Modal */}

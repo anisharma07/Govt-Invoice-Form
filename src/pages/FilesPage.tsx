@@ -37,6 +37,7 @@ import * as AppGeneral from "../components/socialcalc/index";
 import "./FilesPage.css";
 import { useHistory } from "react-router-dom";
 import { File } from "../components/Storage/LocalStorage";
+import TemplateModal from "../components/TemplateModal/TemplateModal";
 const FilesPage: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { selectedFile, store, updateSelectedFile, updateBillType } =
@@ -45,16 +46,19 @@ const FilesPage: React.FC = () => {
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [showFileNamePrompt, setShowFileNamePrompt] = useState(false);
-  const [selectedTemplateForFile, setSelectedTemplateForFile] = useState<
-    number | null
-  >(null);
-  const [newFileName, setNewFileName] = useState("");
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showSharedTemplateModal, setShowSharedTemplateModal] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  // Legacy states for old template modal (will be removed later)
   const [templateFilter, setTemplateFilter] = useState<
     "all" | "web" | "mobile" | "tablet"
   >("all");
+  const [selectedTemplateForFile, setSelectedTemplateForFile] = useState<
+    number | null
+  >(null);
+  const [showFileNamePrompt, setShowFileNamePrompt] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
 
   const [device] = useState(AppGeneral.getDeviceType());
 
@@ -694,9 +698,7 @@ const FilesPage: React.FC = () => {
             ? `${keyPrefix}-${template.templateId || template.template_id}`
             : template.templateId || template.template_id
         }
-        onClick={() =>
-          handleTemplateSelect(template.templateId || template.template_id)
-        }
+        onClick={() => setShowSharedTemplateModal(true)}
         style={{
           border: `1px solid ${
             isDarkMode
@@ -941,9 +943,7 @@ const FilesPage: React.FC = () => {
                     return (
                       <div
                         key={template.templateId}
-                        onClick={() =>
-                          handleTemplateSelect(template.templateId)
-                        }
+                        onClick={() => setShowSharedTemplateModal(true)}
                         style={{
                           border: "2px solid var(--ion-color-light)",
                           borderRadius: "12px",
@@ -1045,7 +1045,7 @@ const FilesPage: React.FC = () => {
 
                 {/* Plus icon card to show more templates */}
                 <div
-                  onClick={() => setShowTemplateModal(true)}
+                  onClick={() => setShowSharedTemplateModal(true)}
                   style={{
                     border: "2px dashed var(--ion-color-light)",
                     borderRadius: "12px",
@@ -1153,7 +1153,7 @@ const FilesPage: React.FC = () => {
                   return (
                     <div
                       key={template.templateId}
-                      onClick={() => handleTemplateSelect(template.templateId)}
+                      onClick={() => setShowSharedTemplateModal(true)}
                       style={{
                         minWidth: "110px",
                         width: "110px",
@@ -1245,7 +1245,7 @@ const FilesPage: React.FC = () => {
 
               {/* Plus icon card to show more templates */}
               <div
-                onClick={() => setShowTemplateModal(true)}
+                onClick={() => setShowSharedTemplateModal(true)}
                 style={{
                   minWidth: "110px",
                   width: "110px",
@@ -1318,8 +1318,15 @@ const FilesPage: React.FC = () => {
           updateBillType={updateBillType}
         />
 
-        {/* Template Modal for small screens */}
-        {renderTemplateModal()}
+        {/* Template Modal */}
+        <TemplateModal
+          isOpen={showSharedTemplateModal}
+          onClose={() => setShowSharedTemplateModal(false)}
+          onFileCreated={(fileName, templateId) => {
+            setToastMessage(`File "${fileName}" created successfully!`);
+            setShowToast(true);
+          }}
+        />
       </IonContent>
 
       <IonToast
@@ -1330,80 +1337,6 @@ const FilesPage: React.FC = () => {
         color={toastMessage.includes("successfully") ? "success" : "warning"}
         position="top"
       />
-
-      {/* File Name Prompt Alert Wrapper */}
-      {showFileNamePrompt &&
-        selectedTemplateForFile !== null &&
-        getTemplateMetadata(selectedTemplateForFile) && (
-          <IonAlert
-            animated
-            isOpen={true}
-            onDidDismiss={() => {
-              setShowFileNamePrompt(false);
-              setSelectedTemplateForFile(null);
-              setNewFileName("");
-            }}
-            header="Create New File"
-            message={`Create a new ${
-              getTemplateMetadata(selectedTemplateForFile)?.name
-            } file`}
-            inputs={[
-              {
-                name: "filename",
-                type: "text",
-                value: newFileName,
-                placeholder: "Enter file name",
-              },
-            ]}
-            buttons={[
-              {
-                text: "Cancel",
-                role: "cancel",
-                handler: () => {
-                  setSelectedTemplateForFile(null);
-                  setNewFileName("");
-                },
-              },
-              {
-                text: "Create",
-                handler: async (data) => {
-                  const fileName = data.filename?.trim();
-                  if (!fileName) {
-                    setToastMessage("Please enter a file name");
-                    setShowToast(true);
-                    // Clear the filename and close the alert when validation fails
-                    setNewFileName("");
-                    setShowFileNamePrompt(false);
-                    setSelectedTemplateForFile(null);
-                    return false; // Prevent alert from closing automatically
-                  }
-
-                  if (selectedTemplateForFile) {
-                    // Validate the filename before creating
-                    const validation = await _validateName(fileName);
-                    if (!validation.isValid) {
-                      setToastMessage(validation.message);
-                      setShowToast(true);
-                      // Clear the filename and close the alert when validation fails
-                      setNewFileName("");
-                      setShowFileNamePrompt(false);
-                      setSelectedTemplateForFile(null);
-                      return false; // Prevent alert from closing automatically
-                    }
-
-                    // If validation passes, create the file
-                    await createNewFileWithTemplate(
-                      selectedTemplateForFile,
-                      fileName
-                    );
-                    return true; // Allow alert to close
-                  }
-                  return false;
-                },
-              },
-            ]}
-          />
-        )}
     </IonPage>
   );
 };

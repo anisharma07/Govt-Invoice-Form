@@ -447,7 +447,12 @@ const Files: React.FC<{
           dateCreated: createdDate,
           dateModified: modifiedDate,
           type: "local",
-          templateMetadata: fileData.templateMetadata || null,
+          templateMetadata: fileData.templateId
+            ? {
+                templateId: fileData.templateId,
+                template: getTemplateInfo(fileData.templateId),
+              }
+            : null,
         };
       });
 

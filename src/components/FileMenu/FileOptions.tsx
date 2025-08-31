@@ -56,6 +56,7 @@ import {
   isQuotaExceededError,
   getQuotaExceededMessage,
 } from "../../utils/helper.js";
+import TemplateModal from "../TemplateModal/TemplateModal";
 
 interface FileOptionsProps {
   showActionsPopover: boolean;
@@ -64,6 +65,7 @@ interface FileOptionsProps {
   setShowColorPicker: (show: boolean) => void;
   onSave?: () => Promise<void>;
   isAutoSaveEnabled?: boolean;
+  fileName: string;
 }
 
 const FileOptions: React.FC<FileOptionsProps> = ({
@@ -73,11 +75,11 @@ const FileOptions: React.FC<FileOptionsProps> = ({
   setShowColorPicker,
   onSave,
   isAutoSaveEnabled = false,
+  fileName,
 }) => {
   const { isDarkMode } = useTheme();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [showUnsavedChangesAlert, setShowUnsavedChangesAlert] = useState(false);
   const [showSaveAsAlert, setShowSaveAsAlert] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [showLogoAlert, setShowLogoAlert] = useState(false);
@@ -96,6 +98,9 @@ const FileOptions: React.FC<FileOptionsProps> = ({
   const [savedSignatures, setSavedSignatures] = useState<
     Array<{ id: string; name: string; data: string }>
   >([]);
+
+  // Template modal state
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const {
     selectedFile,
@@ -237,30 +242,59 @@ const FileOptions: React.FC<FileOptionsProps> = ({
 
   const doSaveAs = async (filename: string) => {
     try {
-      if (_validateName(filename)) {
-        // Check if file already exists
-        const exists = await _checkForExistingFile(filename);
-        if (exists) return;
-
-        setToastMessage("Saving file...");
-        setShowToast(true);
-
-        const content = AppGeneral.getSpreadsheetContent();
-        const now = new Date().toISOString();
-
-        const file = new File(
-          now,
-          now,
-          encodeURIComponent(content),
-          filename,
-          1
-        );
-        await store._saveFile(file);
-
-        setToastMessage("File saved successfully!");
-        setShowToast(true);
-        updateSelectedFile(filename);
+      // Validate the filename first
+      if (!_validateName(filename)) {
+        return;
       }
+
+      // Check if file already exists
+      const exists = await _checkForExistingFile(filename);
+      if (exists) return;
+
+      setToastMessage("Saving file...");
+      setShowToast(true);
+
+      // Get current file data to copy its structure
+      const currentFile = await store._getFile(fileName || selectedFile);
+      const content = AppGeneral.getSpreadsheetContent();
+      const now = new Date().toISOString();
+      if (!currentFile) {
+        console.log("No current file found");
+        setToastMessage("Error saving file!");
+        setShowToast(true);
+        return;
+      }
+      // Create new file with all structure from current file
+      let data = {
+        created: currentFile?.created || now,
+        modified: now,
+        content: encodeURIComponent(content),
+        name: filename,
+        billType: currentFile?.billType || billType || 1,
+        isEncrypted: currentFile?.isEncrypted || false,
+        templateId: currentFile?.templateId,
+      };
+
+      const file = new File(
+        data.created,
+        data.modified,
+        data.content,
+        data.name,
+        data.billType,
+        data.templateId,
+        data.isEncrypted
+      );
+      console.log(file);
+      await store._saveFile(file);
+
+      setToastMessage("File saved successfully!");
+      setShowToast(true);
+      // Redirect to the new file after a short delay
+      setTimeout(() => {
+        const link = document.createElement("a");
+        link.href = `/app/editor/${filename}`;
+        link.click();
+      }, 200);
     } catch (error) {
       console.error("Error saving file:", error);
 
@@ -279,80 +313,9 @@ const FileOptions: React.FC<FileOptionsProps> = ({
     setShowSaveAsAlert(true);
   };
 
-  const handleNewFileClick = async () => {
-    try {
-      setShowActionsPopover(false);
-
-      // Get the default file from storage
-      const defaultExists = await store._checkKey("default");
-      if (selectedFile === "default" && defaultExists) {
-        const storedDefaultFile = await store._getFile("default");
-
-        // Decode the stored content
-        const storedContent = decodeURIComponent(storedDefaultFile.content);
-        const msc = DATA["home"]["App"]["msc"];
-
-        const hasUnsavedChanges = storedContent !== JSON.stringify(msc);
-
-        if (hasUnsavedChanges) {
-          // If there are unsaved changes, show confirmation alert
-          setShowUnsavedChangesAlert(true);
-          return;
-        }
-      }
-      await createNewFile();
-    } catch (error) {
-      console.error("Error checking for unsaved changes:", error);
-      // On error, proceed with normal flow
-      setShowUnsavedChangesAlert(true);
-    }
-  };
-
-  const createNewFile = async () => {
-    try {
-      // Reset to defaults first
-      resetToDefaults();
-
-      // Set selected file to "default"
-      updateSelectedFile("default");
-
-      const msc = DATA["home"]["App"]["msc"];
-
-      // Load the template data into the spreadsheet
-      AppGeneral.viewFile("default", JSON.stringify(msc));
-
-      // Save the new template as the default file in storage
-      const templateContent = encodeURIComponent(JSON.stringify(msc));
-      const now = new Date().toISOString();
-      const newDefaultFile = new File(now, now, templateContent, "default", 1);
-      await store._saveFile(newDefaultFile);
-
-      setToastMessage("New file created successfully");
-      setShowToast(true);
-    } catch (error) {
-      console.error("Error creating new file:", error);
-
-      // Check if the error is due to storage quota exceeded
-      if (isQuotaExceededError(error)) {
-        setToastMessage(getQuotaExceededMessage("create"));
-      } else {
-        setToastMessage("Error creating new invoice");
-      }
-      setShowToast(true);
-    }
-  };
-
-  const handleDiscardAndCreateNew = async () => {
-    try {
-      // User confirmed to discard changes, proceed with creating new file
-      await createNewFile();
-      setShowUnsavedChangesAlert(false);
-    } catch (error) {
-      console.error("Error discarding and creating new file:", error);
-      setToastMessage("Error creating new invoice");
-      setShowToast(true);
-      setShowUnsavedChangesAlert(false);
-    }
+  const handleNewFileClick = () => {
+    setShowActionsPopover(false);
+    setShowTemplateModal(true);
   };
 
   const getCurrentSelectedCell = (): string | null => {
@@ -559,29 +522,6 @@ const FileOptions: React.FC<FileOptionsProps> = ({
         </IonContent>
       </IonPopover>
 
-      {/* Unsaved Changes Confirmation Alert */}
-      <IonAlert
-        isOpen={showUnsavedChangesAlert}
-        onDidDismiss={() => setShowUnsavedChangesAlert(false)}
-        header="⚠️ Unsaved Changes"
-        message="The default file has unsaved changes. Creating a new file will discard these changes. Do you want to continue?"
-        buttons={[
-          {
-            text: "Cancel",
-            role: "cancel",
-            handler: () => {
-              setShowUnsavedChangesAlert(false);
-            },
-          },
-          {
-            text: "Discard & Create New",
-            handler: async () => {
-              await handleDiscardAndCreateNew();
-            },
-          },
-        ]}
-      />
-
       {/* Save As Alert */}
       <IonAlert
         isOpen={showSaveAsAlert}
@@ -762,6 +702,16 @@ const FileOptions: React.FC<FileOptionsProps> = ({
           </IonCard>
         </IonContent>
       </IonModal>
+
+      {/* Template Modal */}
+      <TemplateModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onFileCreated={(fileName, templateId) => {
+          setToastMessage(`File "${fileName}" created successfully!`);
+          setShowToast(true);
+        }}
+      />
     </>
   );
 };

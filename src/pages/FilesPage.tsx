@@ -82,13 +82,14 @@ const FilesPage: React.FC = () => {
     return tempMeta.find((meta) => meta.template_id === templateId);
   };
 
-  // Categorize templates based on their names
-  const categorizeTemplate = (templateName: string | undefined) => {
-    if (!templateName) return "web";
-    const name = templateName.toLowerCase();
-    if (name.includes("mobile")) {
+  // Categorize templates based on their category
+  const categorizeTemplate = (templateId: number) => {
+    const metadata = getTemplateMetadata(templateId);
+    if (!metadata?.category) return "web";
+    const category = metadata.category.toLowerCase();
+    if (category === "mobile") {
       return "mobile";
-    } else if (name.includes("tablet")) {
+    } else if (category === "tablet") {
       return "tablet";
     } else {
       return "web";
@@ -119,19 +120,13 @@ const FilesPage: React.FC = () => {
     const templates = tempMeta;
     const categorized = {
       web: templates.filter((t) => {
-        const metadata = getTemplateMetadata(t.template_id);
-        const templateName = metadata?.name || t.name || "Unknown Template";
-        return categorizeTemplate(templateName) === "web";
+        return categorizeTemplate(t.template_id) === "web";
       }),
       mobile: templates.filter((t) => {
-        const metadata = getTemplateMetadata(t.template_id);
-        const templateName = metadata?.name || t.name || "Unknown Template";
-        return categorizeTemplate(templateName) === "mobile";
+        return categorizeTemplate(t.template_id) === "mobile";
       }),
       tablet: templates.filter((t) => {
-        const metadata = getTemplateMetadata(t.template_id);
-        const templateName = metadata?.name || t.name || "Unknown Template";
-        return categorizeTemplate(templateName) === "tablet";
+        return categorizeTemplate(t.template_id) === "tablet";
       }),
     };
     return categorized;
@@ -685,7 +680,9 @@ const FilesPage: React.FC = () => {
       template.template ||
       template.name ||
       "Unknown Template";
-    const category = categorizeTemplate(templateName);
+    const category = categorizeTemplate(
+      template.templateId || template.template_id
+    );
 
     // Get the template data from DATA to access footers
     const templateData = DATA[template.templateId || template.template_id];
@@ -943,7 +940,7 @@ const FilesPage: React.FC = () => {
                     return (
                       <div
                         key={template.templateId}
-                        onClick={() => setShowSharedTemplateModal(true)}
+                        onClick={() => handleTemplateSelect(template.templateId)}
                         style={{
                           border: "2px solid var(--ion-color-light)",
                           borderRadius: "12px",
@@ -1153,7 +1150,7 @@ const FilesPage: React.FC = () => {
                   return (
                     <div
                       key={template.templateId}
-                      onClick={() => setShowSharedTemplateModal(true)}
+                      onClick={() => handleTemplateSelect(template.templateId)}
                       style={{
                         minWidth: "110px",
                         width: "110px",
@@ -1336,6 +1333,48 @@ const FilesPage: React.FC = () => {
         duration={3000}
         color={toastMessage.includes("successfully") ? "success" : "warning"}
         position="top"
+      />
+
+      {/* File Name Prompt */}
+      <IonAlert
+        isOpen={showFileNamePrompt}
+        onDidDismiss={() => {
+          setShowFileNamePrompt(false);
+          setSelectedTemplateForFile(null);
+          setNewFileName("");
+        }}
+        header="Create New File"
+        message="Enter a name for your new file:"
+        inputs={[
+          {
+            name: "fileName",
+            type: "text",
+            placeholder: "File name",
+            value: newFileName,
+          },
+        ]}
+        buttons={[
+          {
+            text: "Cancel",
+            role: "cancel",
+            handler: () => {
+              setShowFileNamePrompt(false);
+              setSelectedTemplateForFile(null);
+              setNewFileName("");
+            },
+          },
+          {
+            text: "Create",
+            handler: async (data) => {
+              if (data.fileName && selectedTemplateForFile !== null) {
+                await createNewFileWithTemplate(
+                  selectedTemplateForFile,
+                  data.fileName
+                );
+              }
+            },
+          },
+        ]}
       />
     </IonPage>
   );

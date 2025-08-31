@@ -74,7 +74,6 @@ export let DATA: { [key: number]: TemplateData } = {
     cellMappings: {
       sheet1: {
         Heading: "B2",
-        bidi: "B80",
         Date: "D20",
         InvoiceNumber: "C18",
         From: {

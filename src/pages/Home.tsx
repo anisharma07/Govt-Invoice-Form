@@ -1224,6 +1224,7 @@ const Home: React.FC = () => {
         <DynamicInvoiceForm
           isOpen={showInvoiceForm}
           onClose={() => setShowInvoiceForm(false)}
+          
         />
 
         {/* Floating Action Button for Invoice Edit */}

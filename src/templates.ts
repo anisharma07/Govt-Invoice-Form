@@ -236,8 +236,8 @@ export let DATA: { [key: number]: TemplateData } = {
             end: 35,
           },
           Columns: {
-            Description: "C",
-            Amount: "F",
+            Description: "B",
+            Amount: "G",
           },
         },
 

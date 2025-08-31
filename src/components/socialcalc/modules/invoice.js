@@ -52,6 +52,52 @@ export function getInvoiceCoordinates() {
   return coordinates;
 }
 
+// Helper function to clean up HTML entities and unwanted characters
+function cleanCellValue(rawValue) {
+  if (!rawValue) {
+    return "";
+  }
+
+  // Handle numeric values
+  if (typeof rawValue === "number") {
+    return rawValue;
+  }
+
+  // Convert to string and clean up HTML entities
+  let cleanValue = rawValue.toString();
+  let originalValue = cleanValue; // Store original for logging
+
+  // Replace common HTML entities
+  cleanValue = cleanValue
+    .replace(/&nbsp;/g, " ") // Non-breaking space
+    .replace(/&amp;/g, "&") // Ampersand
+    .replace(/&lt;/g, "<") // Less than
+    .replace(/&gt;/g, ">") // Greater than
+    .replace(/&quot;/g, '"') // Double quote
+    .replace(/&#39;/g, "'") // Single quote
+    .replace(/&apos;/g, "'") // Apostrophe
+    .replace(/&#160;/g, " ") // Non-breaking space (numeric)
+    .replace(/&#xa0;/g, " ") // Non-breaking space (hex)
+    .replace(/\u00A0/g, " ") // Unicode non-breaking space
+    .replace(/\s+/g, " ") // Multiple spaces to single space
+    .trim(); // Remove leading/trailing whitespace
+
+  // Remove any remaining HTML tags
+  cleanValue = cleanValue.replace(/<[^>]*>/g, "");
+
+  // If the cleaned value is just whitespace or empty, return empty string
+  if (!cleanValue || cleanValue.trim() === "") {
+    return "";
+  }
+
+  // Log if we cleaned something
+  if (originalValue !== cleanValue) {
+    console.log(`Cleaned cell value: "${originalValue}" -> "${cleanValue}"`);
+  }
+
+  return cleanValue;
+}
+
 export function addInvoiceData(invoiceData) {
   return new Promise(function (resolve, reject) {
     console.log("=== ADD INVOICE DATA START ===");
@@ -218,6 +264,83 @@ export function addInvoiceData(invoiceData) {
   });
 }
 
+export function getDynamicInvoiceData(cellReferences) {
+  return new Promise(function (resolve, reject) {
+    console.log("=== GET DYNAMIC INVOICE DATA START ===");
+    console.log("Cell references to read:", cellReferences);
+
+    try {
+      var control = SocialCalc.GetCurrentWorkBookControl();
+      console.log("Workbook control:", control ? "Found" : "Not found");
+
+      if (!control) {
+        throw new Error("No workbook control available");
+      }
+
+      if (!control.currentSheetButton) {
+        throw new Error("No current sheet button available");
+      }
+
+      var currsheet = control.currentSheetButton.id;
+      console.log("Current active sheet:", currsheet);
+
+      // Get the current sheet object
+      var sheet = control.workbook.sheetArr[currsheet]?.sheet;
+      if (!sheet) {
+        throw new Error("Sheet not found: " + currsheet);
+      }
+
+      var cellData = {};
+
+      // Read values from each cell reference
+      cellReferences.forEach((cellRef) => {
+        try {
+          var cell = sheet.cells[cellRef];
+          var value = "";
+
+          if (cell) {
+            // Get the display value of the cell
+            if (cell.datatype === "v") {
+              // Numeric value
+              value = cell.datavalue !== undefined ? cell.datavalue : "";
+            } else if (cell.datatype === "t") {
+              // Text value
+              value = cell.datavalue !== undefined ? cell.datavalue : "";
+            } else if (cell.datatype === "f") {
+              // Formula - get the calculated value
+              value =
+                cell.valuetype === "n"
+                  ? cell.datavalue
+                  : cell.displaystring || "";
+            } else {
+              // Other types - try to get display value
+              value = cell.displaystring || cell.datavalue || "";
+            }
+
+            // Clean up HTML entities and unwanted characters
+            value = cleanCellValue(value);
+          }
+
+          cellData[cellRef] = value;
+          console.log(`Cell ${cellRef} = ${value}`);
+        } catch (cellError) {
+          console.warn(`Error reading cell ${cellRef}:`, cellError);
+          cellData[cellRef] = "";
+        }
+      });
+
+      console.log("Retrieved cell data:", cellData);
+      console.log("=== GET DYNAMIC INVOICE DATA SUCCESS ===");
+      resolve(cellData);
+    } catch (error) {
+      console.error("=== GET DYNAMIC INVOICE DATA ERROR ===");
+      console.error("Error details:", error);
+      console.error("Stack trace:", error.stack);
+      reject(error);
+    }
+  });
+}
+
 export function addDynamicInvoiceData(cellData, sheetId) {
   return new Promise(function (resolve, reject) {
     console.log("=== ADD DYNAMIC INVOICE DATA START ===");
@@ -244,26 +367,32 @@ export function addDynamicInvoiceData(cellData, sheetId) {
 
       // Iterate through cellData and create set commands
       Object.entries(cellData).forEach(([cellRef, value]) => {
-        if (value !== undefined && value !== null && value !== "") {
-          // Determine if the value is numeric or text
-          const stringValue = value.toString().trim();
-          const numericValue = parseFloat(stringValue);
-
-          if (
-            !isNaN(numericValue) &&
-            isFinite(numericValue) &&
-            stringValue === numericValue.toString()
-          ) {
-            // It's a valid number
-            commands.push(`set ${cellRef} value n ${numericValue}`);
+        if (value !== undefined && value !== null) {
+          if (value === "") {
+            // Clear the cell if value is empty string
+            commands.push(`set ${cellRef} value`);
+            console.log(`Clearing cell ${cellRef}`);
           } else {
-            // It's text - encode it properly for SocialCalc
-            const encodedValue = SocialCalc.encodeForSave
-              ? SocialCalc.encodeForSave(stringValue)
-              : stringValue;
-            commands.push(`set ${cellRef} text t ${encodedValue}`);
+            // Determine if the value is numeric or text
+            const stringValue = value.toString().trim();
+            const numericValue = parseFloat(stringValue);
+
+            if (
+              !isNaN(numericValue) &&
+              isFinite(numericValue) &&
+              stringValue === numericValue.toString()
+            ) {
+              // It's a valid number
+              commands.push(`set ${cellRef} value n ${numericValue}`);
+            } else {
+              // It's text - encode it properly for SocialCalc
+              const encodedValue = SocialCalc.encodeForSave
+                ? SocialCalc.encodeForSave(stringValue)
+                : stringValue;
+              commands.push(`set ${cellRef} text t ${encodedValue}`);
+            }
+            console.log(`Setting cell ${cellRef} = ${value}`);
           }
-          console.log(`Setting cell ${cellRef} = ${value}`);
         }
       });
 

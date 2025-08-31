@@ -22,13 +22,21 @@ import {
   IonTextarea,
   IonChip,
 } from "@ionic/react";
-import { close, save, trash, layers } from "ionicons/icons";
+import {
+  close,
+  save,
+  trash,
+  layers,
+  refresh,
+  add,
+  remove,
+} from "ionicons/icons";
 import { useInvoice } from "../contexts/InvoiceContext";
 import {
   addInvoiceData,
   addDynamicInvoiceData,
   clearInvoiceData,
-  clearDynamicInvoiceData,
+  getDynamicInvoiceData,
 } from "./socialcalc/modules/invoice.js";
 import {
   DynamicFormManager,
@@ -54,6 +62,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
   const [toastColor, setToastColor] = useState<
     "success" | "danger" | "warning"
   >("success");
+  const [lastSyncTime, setLastSyncTime] = useState<number>(0);
 
   // Get current template data
   const currentTemplate = useMemo(() => {
@@ -76,9 +85,55 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
 
   // Initialize form data when form sections change
   useEffect(() => {
-    const initData = DynamicFormManager.initializeFormData(formSections);
-    setFormData(initData);
+    const loadFormData = async () => {
+      try {
+        if (formSections.length === 0) return;
+
+        // Get all cell references from the form sections
+        const cellReferences =
+          DynamicFormManager.getAllCellReferences(formSections);
+
+        if (cellReferences.length > 0) {
+          console.log("Loading existing data from cells:", cellReferences);
+
+          // Get existing data from the spreadsheet
+          const existingCellData = await getDynamicInvoiceData(cellReferences);
+
+          // Convert cell data back to form data structure
+          const existingFormData =
+            DynamicFormManager.convertFromSpreadsheetFormat(
+              existingCellData,
+              formSections
+            );
+
+          console.log("Loaded existing form data:", existingFormData);
+          setFormData(existingFormData);
+        } else {
+          // No cell references, initialize with empty data
+          const initData = DynamicFormManager.initializeFormData(formSections);
+          setFormData(initData);
+        }
+      } catch (error) {
+        console.error("Error loading existing form data:", error);
+        // Fall back to empty initialization
+        const initData = DynamicFormManager.initializeFormData(formSections);
+        setFormData(initData);
+      }
+    };
+
+    loadFormData();
   }, [formSections]);
+
+  // Auto-refresh data when modal opens
+  useEffect(() => {
+    if (isOpen && formSections.length > 0) {
+      const timeoutId = setTimeout(() => {
+        handleRefresh();
+      }, 200);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOpen, formSections]);
 
   const showToastMessage = (
     message: string,
@@ -144,6 +199,10 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
 
       // Use the new addDynamicInvoiceData function that handles cell references
       await addDynamicInvoiceData(cellData, effectiveSheetId);
+
+      // Update last sync time to prevent immediate auto-sync
+      setLastSyncTime(Date.now());
+
       showToastMessage("Invoice data saved successfully!", "success");
 
       // Close modal after a short delay
@@ -158,25 +217,138 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
     }
   };
 
-  const handleClear = async () => {
+  const saveToSheet = async () => {
     try {
-      // Get current cell data to know which cells to clear
+      // Validate form data
+      const validation = DynamicFormManager.validateFormData(
+        formData,
+        formSections
+      );
+      if (!validation.isValid) {
+        console.log("Validation errors during save:", validation.errors);
+        return;
+      }
+
+      // Convert form data to spreadsheet format
       const cellData = DynamicFormManager.convertToSpreadsheetFormat(
         formData,
         formSections,
         effectiveSheetId
       );
 
-      await clearDynamicInvoiceData(cellData);
+      console.log("Saving to sheet after item change:", cellData);
 
-      // Reset form data
+      // Use the new addDynamicInvoiceData function that handles cell references
+      await addDynamicInvoiceData(cellData, effectiveSheetId);
+
+      // Update last sync time to prevent immediate auto-sync
+      setLastSyncTime(Date.now());
+    } catch (error) {
+      console.error("Error saving to sheet:", error);
+    }
+  };
+
+  const handleClear = async () => {
+    try {
+      // Reset form data without affecting the sheet
       const initData = DynamicFormManager.initializeFormData(formSections);
       setFormData(initData);
-      showToastMessage("Form data cleared successfully!", "success");
+      showToastMessage(
+        "Form fields cleared! Click 'Save Data' to apply changes to sheet.",
+        "success"
+      );
     } catch (error) {
       console.error("Error clearing form data:", error);
       showToastMessage("Failed to clear form data", "danger");
     }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      // Get all cell references from the form sections
+      const cellReferences =
+        DynamicFormManager.getAllCellReferences(formSections);
+
+      if (cellReferences.length > 0) {
+        console.log("Refreshing data from cells:", cellReferences);
+
+        // Get current data from the spreadsheet
+        const currentCellData = await getDynamicInvoiceData(cellReferences);
+
+        // Convert cell data back to form data structure
+        const refreshedFormData =
+          DynamicFormManager.convertFromSpreadsheetFormat(
+            currentCellData,
+            formSections
+          );
+
+        console.log("Refreshed form data:", refreshedFormData);
+        setFormData(refreshedFormData);
+        showToastMessage("Form data refreshed from spreadsheet!", "success");
+      } else {
+        showToastMessage("No data to refresh", "warning");
+      }
+    } catch (error) {
+      console.error("Error refreshing form data:", error);
+      showToastMessage("Failed to refresh form data", "danger");
+    }
+  };
+
+  const handleAddItem = (sectionTitle: string) => {
+    const section = formSections.find((s) => s.title === sectionTitle);
+    if (!section || !section.itemsConfig) return;
+
+    setFormData((prev) => {
+      const currentItems = prev[sectionTitle] as any[];
+      const maxItems =
+        section.itemsConfig!.range.end - section.itemsConfig!.range.start + 1;
+
+      if (currentItems.length >= maxItems) {
+        showToastMessage(`Maximum ${maxItems} items allowed`, "warning");
+        return prev;
+      }
+
+      const newItem: any = {};
+      Object.keys(section.itemsConfig!.content).forEach((contentKey) => {
+        newItem[contentKey] = "";
+      });
+
+      return {
+        ...prev,
+        [sectionTitle]: [...currentItems, newItem],
+      };
+    });
+
+    // Trigger save after state update (but don't close modal)
+    setTimeout(() => {
+      saveToSheet();
+    }, 100);
+  };
+
+  const handleRemoveItem = (sectionTitle: string, itemIndex: number) => {
+    setFormData((prev) => {
+      const currentItems = prev[sectionTitle] as any[];
+
+      if (currentItems.length <= 1) {
+        showToastMessage("At least one item is required", "warning");
+        return prev;
+      }
+
+      const updatedItems = currentItems.filter(
+        (_, index) => index !== itemIndex
+      );
+      const newFormData = {
+        ...prev,
+        [sectionTitle]: updatedItems,
+      };
+
+      return newFormData;
+    });
+
+    // Trigger save after state update (but don't close modal)
+    setTimeout(() => {
+      saveToSheet();
+    }, 100);
   };
 
   const renderField = (field: DynamicFormField, sectionTitle: string) => {
@@ -260,6 +432,8 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
     if (!section.itemsConfig || !formData[section.title]) return null;
 
     const items = formData[section.title] as any[];
+    const maxItems =
+      section.itemsConfig.range.end - section.itemsConfig.range.start + 1;
 
     return (
       <IonCard key={section.title}>
@@ -271,6 +445,16 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
             <div key={index} className="item-group">
               <IonItemDivider>
                 <IonLabel>Item {index + 1}</IonLabel>
+                {items.length > 1 && (
+                  <IonButton
+                    fill="clear"
+                    color="danger"
+                    size="small"
+                    onClick={() => handleRemoveItem(section.title, index)}
+                  >
+                    <IonIcon icon={remove} />
+                  </IonButton>
+                )}
               </IonItemDivider>
               {Object.entries(section.itemsConfig!.content).map(
                 ([fieldName, cellColumn]) => (
@@ -303,6 +487,19 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
               )}
             </div>
           ))}
+
+          {/* Add Item Button */}
+          <div style={{ padding: "10px 0", textAlign: "center" }}>
+            <IonButton
+              fill="outline"
+              color="primary"
+              onClick={() => handleAddItem(section.title)}
+              disabled={items.length >= maxItems}
+            >
+              <IonIcon icon={add} slot="start" />
+              Add Item ({items.length}/{maxItems})
+            </IonButton>
+          </div>
         </IonCardContent>
       </IonCard>
     );
@@ -366,6 +563,9 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
               </IonChip>
             </IonButtons>
             <IonButtons slot="end">
+              <IonButton onClick={handleRefresh} fill="clear">
+                <IonIcon icon={refresh} />
+              </IonButton>
               <IonButton onClick={onClose}>
                 <IonIcon icon={close} />
               </IonButton>
@@ -389,24 +589,19 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
           </IonGrid>
 
           {/* Action Buttons */}
-          <div style={{ padding: "20px" }}>
-            <IonButton
-              expand="block"
-              onClick={handleSave}
-              color="primary"
-              style={{ marginBottom: "10px" }}
-            >
+          <div style={{ padding: "20px", display: "flex", gap: "10px" }}>
+            <IonButton onClick={handleSave} color="primary" style={{ flex: 1 }}>
               <IonIcon icon={save} slot="start" />
-              Save Invoice Data
+              Save Data
             </IonButton>
             <IonButton
-              expand="block"
               onClick={handleClear}
               color="danger"
               fill="outline"
+              style={{ flex: 1 }}
             >
               <IonIcon icon={trash} slot="start" />
-              Clear All Data
+              Clear All
             </IonButton>
           </div>
         </IonContent>

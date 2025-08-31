@@ -27,6 +27,50 @@ export interface ProcessedFormData {
  */
 export class DynamicFormManager {
   /**
+   * Cleans up HTML entities and unwanted characters from cell values
+   * @param rawValue The raw value from the cell
+   * @returns Cleaned string value
+   */
+  private static cleanCellValue(rawValue: any): string {
+    if (!rawValue) {
+      return "";
+    }
+
+    // Handle numeric values
+    if (typeof rawValue === "number") {
+      return rawValue.toString();
+    }
+
+    // Convert to string and clean up HTML entities
+    let cleanValue = rawValue.toString();
+
+    // Replace common HTML entities
+    cleanValue = cleanValue
+      .replace(/&nbsp;/g, " ") // Non-breaking space
+      .replace(/&amp;/g, "&") // Ampersand
+      .replace(/&lt;/g, "<") // Less than
+      .replace(/&gt;/g, ">") // Greater than
+      .replace(/&quot;/g, '"') // Double quote
+      .replace(/&#39;/g, "'") // Single quote
+      .replace(/&apos;/g, "'") // Apostrophe
+      .replace(/&#160;/g, " ") // Non-breaking space (numeric)
+      .replace(/&#xa0;/g, " ") // Non-breaking space (hex)
+      .replace(/\u00A0/g, " ") // Unicode non-breaking space
+      .replace(/\s+/g, " ") // Multiple spaces to single space
+      .trim(); // Remove leading/trailing whitespace
+
+    // Remove any remaining HTML tags
+    cleanValue = cleanValue.replace(/<[^>]*>/g, "");
+
+    // If the cleaned value is just whitespace or empty, return empty string
+    if (!cleanValue || cleanValue.trim() === "") {
+      return "";
+    }
+
+    return cleanValue;
+  }
+
+  /**
    * Determines the field type based on the field label
    * @param label The field label
    * @returns The appropriate input type
@@ -145,7 +189,7 @@ export class DynamicFormManager {
   }
 
   /**
-   * Initializes form data based on form sections
+   * Initializes form data based on form sections (starting with minimal items)
    * @param sections The form sections
    * @returns Initial form data object
    */
@@ -154,19 +198,13 @@ export class DynamicFormManager {
 
     sections.forEach((section) => {
       if (section.isItems && section.itemsConfig) {
-        // Initialize items array
+        // Initialize items array with just one item
         const itemsArray: any[] = [];
-        for (
-          let i = section.itemsConfig.range.start;
-          i <= section.itemsConfig.range.end;
-          i++
-        ) {
-          const item: any = {};
-          Object.keys(section.itemsConfig.content).forEach((contentKey) => {
-            item[contentKey] = "";
-          });
-          itemsArray.push(item);
-        }
+        const item: any = {};
+        Object.keys(section.itemsConfig.content).forEach((contentKey) => {
+          item[contentKey] = "";
+        });
+        itemsArray.push(item);
         formData[section.title] = itemsArray;
       } else {
         // Initialize regular fields
@@ -260,6 +298,24 @@ export class DynamicFormManager {
       if (section.isItems && section.itemsConfig) {
         // Handle items with range-based cell mapping
         const items = formData[section.title] as any[];
+
+        // First, clear all cells in the range by setting them to empty string
+        for (
+          let rowIndex = 0;
+          rowIndex <=
+          section.itemsConfig.range.end - section.itemsConfig.range.start;
+          rowIndex++
+        ) {
+          const rowNumber = section.itemsConfig.range.start + rowIndex;
+          Object.entries(section.itemsConfig.content).forEach(
+            ([fieldName, columnLetter]) => {
+              const cellRef = `${columnLetter}${rowNumber}`;
+              cellData[cellRef] = ""; // Clear the cell
+            }
+          );
+        }
+
+        // Then, populate cells with actual data
         if (items && items.length > 0) {
           items.forEach((item, index) => {
             const rowNumber = section.itemsConfig!.range.start + index;
@@ -283,6 +339,99 @@ export class DynamicFormManager {
     });
 
     return cellData;
+  }
+
+  /**
+   * Converts spreadsheet cell data back to form data structure
+   * @param cellData Object with cell references and their values
+   * @param sections The form sections to map against
+   * @returns ProcessedFormData object
+   */
+  static convertFromSpreadsheetFormat(
+    cellData: { [cellRef: string]: any },
+    sections: DynamicFormSection[]
+  ): ProcessedFormData {
+    const formData: ProcessedFormData = {};
+
+    sections.forEach((section) => {
+      if (section.isItems && section.itemsConfig) {
+        // Handle items with range-based cell mapping
+        const itemsArray: any[] = [];
+
+        for (
+          let rowIndex = section.itemsConfig.range.start;
+          rowIndex <= section.itemsConfig.range.end;
+          rowIndex++
+        ) {
+          const item: any = {};
+          let hasData = false;
+
+          Object.entries(section.itemsConfig.content).forEach(
+            ([fieldName, columnLetter]) => {
+              const cellRef = `${columnLetter}${rowIndex}`;
+              const rawValue = cellData[cellRef] || "";
+              const cleanValue = this.cleanCellValue(rawValue);
+              item[fieldName] = cleanValue;
+              if (cleanValue) hasData = true;
+            }
+          );
+
+          // Only add items that have at least some data
+          if (hasData || rowIndex === section.itemsConfig.range.start) {
+            itemsArray.push(item);
+          }
+        }
+
+        formData[section.title] = itemsArray;
+      } else {
+        // Handle regular fields
+        const sectionData: any = {};
+        section.fields.forEach((field) => {
+          if (field.cellMapping) {
+            const rawValue = cellData[field.cellMapping] || "";
+            sectionData[field.label] = this.cleanCellValue(rawValue);
+          }
+        });
+        formData[section.title] = sectionData;
+      }
+    });
+
+    return formData;
+  }
+
+  /**
+   * Gets all cell references from form sections
+   * @param sections The form sections
+   * @returns Array of cell references
+   */
+  static getAllCellReferences(sections: DynamicFormSection[]): string[] {
+    const cellRefs: string[] = [];
+
+    sections.forEach((section) => {
+      if (section.isItems && section.itemsConfig) {
+        // Add all item cell references
+        for (
+          let rowIndex = section.itemsConfig.range.start;
+          rowIndex <= section.itemsConfig.range.end;
+          rowIndex++
+        ) {
+          Object.entries(section.itemsConfig.content).forEach(
+            ([fieldName, columnLetter]) => {
+              cellRefs.push(`${columnLetter}${rowIndex}`);
+            }
+          );
+        }
+      } else {
+        // Add regular field cell references
+        section.fields.forEach((field) => {
+          if (field.cellMapping) {
+            cellRefs.push(field.cellMapping);
+          }
+        });
+      }
+    });
+
+    return cellRefs;
   }
 
   /**

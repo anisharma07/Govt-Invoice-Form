@@ -105,9 +105,9 @@ const Files: React.FC<{
 
   const [serverFilesLoading, setServerFilesLoading] = useState(false);
 
-  // Template selection states
-  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<
-    number | "all"
+  // Template selection states - now using category instead of specific template
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
+    string | "all"
   >("all");
 
   // Screen size state
@@ -123,6 +123,31 @@ const Files: React.FC<{
       template: template.name,
       ImageUri: template.ImageUri,
     }));
+  };
+
+  // Category helper functions
+  const categorizeTemplate = (template_id: number) => {
+    const metadata = tempMeta.find((meta) => meta.template_id === template_id);
+    if (!metadata?.category) return "web";
+
+    const category = metadata.category.toLowerCase();
+    if (category === "mobile") {
+      return "mobile";
+    } else if (category === "tablet") {
+      return "tablet";
+    } else {
+      return "web";
+    }
+  };
+
+  const getAvailableCategories = () => {
+    const categories = new Set<string>();
+    tempMeta.forEach((template) => {
+      if (template.category) {
+        categories.add(template.category);
+      }
+    });
+    return Array.from(categories).sort();
   };
 
   const getTemplateInfo = (templateId: number) => {
@@ -456,12 +481,16 @@ const Files: React.FC<{
         };
       });
 
-      // Filter by template if a specific template is selected
+      // Filter by category if a specific category is selected
       let filteredFiles = filesArray;
-      if (selectedTemplateFilter !== "all") {
-        filteredFiles = filesArray.filter(
-          (file) => file.templateMetadata?.templateId === selectedTemplateFilter
-        );
+      if (selectedCategoryFilter !== "all") {
+        filteredFiles = filesArray.filter((file) => {
+          if (!file.templateMetadata?.templateId) return false;
+          const templateCategory = categorizeTemplate(
+            file.templateMetadata.templateId
+          );
+          return templateCategory === selectedCategoryFilter.toLowerCase();
+        });
       }
 
       // Apply search filter
@@ -470,10 +499,8 @@ const Files: React.FC<{
       if (filteredFiles.length === 0) {
         const emptyMessage = searchQuery.trim()
           ? `No files found matching "${searchQuery}"`
-          : selectedTemplateFilter !== "all"
-          ? `No files found for ${getTemplateInfo(
-              selectedTemplateFilter as number
-            )}`
+          : selectedCategoryFilter !== "all"
+          ? `No files found for ${selectedCategoryFilter} category`
           : "No local files found";
 
         content = (
@@ -690,7 +717,7 @@ const Files: React.FC<{
     searchQuery,
     sortBy,
     serverFilesLoading,
-    selectedTemplateFilter,
+    selectedCategoryFilter,
   ]);
 
   // Check screen size
@@ -749,7 +776,7 @@ const Files: React.FC<{
                 style={{ flex: "2", minWidth: "200px" }}
               />
 
-              {/* Template Filter */}
+              {/* Category Filter */}
               <div
                 style={{
                   display: "flex",
@@ -768,10 +795,10 @@ const Files: React.FC<{
                 />
                 {!isSmallScreen && (
                   <IonSelect
-                    value={selectedTemplateFilter}
-                    placeholder="All Templates"
+                    value={selectedCategoryFilter}
+                    placeholder="All Categories"
                     onIonChange={(e) =>
-                      setSelectedTemplateFilter(e.detail.value)
+                      setSelectedCategoryFilter(e.detail.value)
                     }
                     style={{
                       flex: "1",
@@ -780,23 +807,22 @@ const Files: React.FC<{
                     }}
                     interface="popover"
                   >
-                    <IonSelectOption value="all">All Templates</IonSelectOption>
-                    {getAvailableTemplates().map((template) => (
-                      <IonSelectOption
-                        key={template.templateId}
-                        value={template.templateId}
-                      >
-                        {template.template}
+                    <IonSelectOption value="all">
+                      All Categories
+                    </IonSelectOption>
+                    {getAvailableCategories().map((category) => (
+                      <IonSelectOption key={category} value={category}>
+                        {category}
                       </IonSelectOption>
                     ))}
                   </IonSelect>
                 )}
                 {isSmallScreen && (
                   <IonSelect
-                    value={selectedTemplateFilter}
+                    value={selectedCategoryFilter}
                     placeholder=""
                     onIonChange={(e) =>
-                      setSelectedTemplateFilter(e.detail.value)
+                      setSelectedCategoryFilter(e.detail.value)
                     }
                     style={{
                       flex: "1",
@@ -807,13 +833,12 @@ const Files: React.FC<{
                     }}
                     interface="popover"
                   >
-                    <IonSelectOption value="all">All Templates</IonSelectOption>
-                    {getAvailableTemplates().map((template) => (
-                      <IonSelectOption
-                        key={template.templateId}
-                        value={template.templateId}
-                      >
-                        {template.template}
+                    <IonSelectOption value="all">
+                      All Categories
+                    </IonSelectOption>
+                    {getAvailableCategories().map((category) => (
+                      <IonSelectOption key={category} value={category}>
+                        {category}
                       </IonSelectOption>
                     ))}
                   </IonSelect>

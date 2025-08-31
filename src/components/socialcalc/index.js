@@ -1,8 +1,7 @@
-// Import as a side-effect to load the global
-import "./aspiring/SocialCalc.js";
+import SocialCalcFromCore from "./core/index.js";
 
-// Access the global SocialCalc that was created by the UMD module
-let SocialCalc;
+// Use the imported SocialCalc
+let SocialCalc = SocialCalcFromCore;
 
 // Ensure SocialCalc is loaded from the global scope
 if (typeof window !== "undefined" && window.SocialCalc) {

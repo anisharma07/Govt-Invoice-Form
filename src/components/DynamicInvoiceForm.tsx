@@ -21,6 +21,7 @@ import {
   IonItemDivider,
   IonTextarea,
   IonChip,
+  IonAlert,
 } from "@ionic/react";
 import {
   close,
@@ -55,7 +56,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { activeTemplateData, currentSheetId } = useInvoice();
+  const { activeTemplateData, currentSheetId, selectedFile } = useInvoice();
   const [formData, setFormData] = useState<ProcessedFormData>({});
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -63,6 +64,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
     "success" | "danger" | "warning"
   >("success");
   const [lastSyncTime, setLastSyncTime] = useState<number>(0);
+  const [showRefreshAlert, setShowRefreshAlert] = useState(false);
 
   // Get current template data
   const currentTemplate = useMemo(() => {
@@ -128,7 +130,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
   useEffect(() => {
     if (isOpen && formSections.length > 0) {
       const timeoutId = setTimeout(() => {
-        handleRefresh();
+        silentRefresh();
       }, 200);
 
       return () => clearTimeout(timeoutId);
@@ -263,7 +265,34 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
     }
   };
 
-  const handleRefresh = async () => {
+  const silentRefresh = async () => {
+    try {
+      // Get all cell references from the form sections
+      const cellReferences =
+        DynamicFormManager.getAllCellReferences(formSections);
+
+      if (cellReferences.length > 0) {
+        console.log("Silently refreshing data from cells:", cellReferences);
+
+        // Get current data from the spreadsheet
+        const currentCellData = await getDynamicInvoiceData(cellReferences);
+
+        // Convert cell data back to form data structure
+        const refreshedFormData =
+          DynamicFormManager.convertFromSpreadsheetFormat(
+            currentCellData,
+            formSections
+          );
+
+        console.log("Silent refresh - form data updated:", refreshedFormData);
+        setFormData(refreshedFormData);
+      }
+    } catch (error) {
+      console.error("Error during silent refresh:", error);
+    }
+  };
+
+  const performRefresh = async () => {
     try {
       // Get all cell references from the form sections
       const cellReferences =
@@ -294,6 +323,10 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
     }
   };
 
+  const handleRefresh = () => {
+    setShowRefreshAlert(true);
+  };
+
   const handleAddItem = (sectionTitle: string) => {
     const section = formSections.find((s) => s.title === sectionTitle);
     if (!section || !section.itemsConfig) return;
@@ -318,11 +351,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
         [sectionTitle]: [...currentItems, newItem],
       };
     });
-
-    // Trigger save after state update (but don't close modal)
-    setTimeout(() => {
-      saveToSheet();
-    }, 100);
   };
 
   const handleRemoveItem = (sectionTitle: string, itemIndex: number) => {
@@ -344,11 +372,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
 
       return newFormData;
     });
-
-    // Trigger save after state update (but don't close modal)
-    setTimeout(() => {
-      saveToSheet();
-    }, 100);
   };
 
   const renderField = (field: DynamicFormField, sectionTitle: string) => {
@@ -529,7 +552,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
       <IonModal isOpen={isOpen} onDidDismiss={onClose}>
         <IonHeader>
           <IonToolbar color="primary">
-            <IonTitle>Dynamic Invoice Form</IonTitle>
+            <IonTitle>Edit {selectedFile}</IonTitle>
             <IonButtons slot="end">
               <IonButton onClick={onClose}>
                 <IonIcon icon={close} />
@@ -555,13 +578,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
       >
         <IonHeader>
           <IonToolbar color="primary">
-            <IonTitle>Dynamic Invoice Form</IonTitle>
-            <IonButtons slot="start">
-              <IonChip>
-                <IonIcon icon={layers} />
-                <IonLabel>{currentTemplate.template}</IonLabel>
-              </IonChip>
-            </IonButtons>
+            <IonTitle>Edit {selectedFile}</IonTitle>
             <IonButtons slot="end">
               <IonButton onClick={handleRefresh} fill="clear">
                 <IonIcon icon={refresh} />
@@ -613,6 +630,30 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
         message={toastMessage}
         duration={3000}
         color={toastColor}
+      />
+
+      <IonAlert
+        isOpen={showRefreshAlert}
+        onDidDismiss={() => setShowRefreshAlert(false)}
+        header="Sync Sheet Data"
+        message="Do you want to sync sheet data to the form? This will discard any changes you might have made."
+        buttons={[
+          {
+            text: "Cancel",
+            role: "cancel",
+            handler: () => {
+              setShowRefreshAlert(false);
+            },
+          },
+          {
+            text: "Sync Data",
+            role: "confirm",
+            handler: () => {
+              setShowRefreshAlert(false);
+              performRefresh();
+            },
+          },
+        ]}
       />
     </>
   );

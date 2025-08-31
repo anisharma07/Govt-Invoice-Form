@@ -72,13 +72,15 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
     return tempMeta.find((meta) => meta.template_id === templateId);
   };
 
-  // Categorize templates based on their names
-  const categorizeTemplate = (templateName: string | undefined) => {
-    if (!templateName) return "web";
-    const name = templateName.toLowerCase();
-    if (name.includes("mobile")) {
+  // Categorize templates based on their metadata category
+  const categorizeTemplate = (template_id: number) => {
+    const metadata = getTemplateMetadata(template_id);
+    if (!metadata?.category) return "web";
+
+    const category = metadata.category.toLowerCase();
+    if (category === "mobile") {
       return "mobile";
-    } else if (name.includes("tablet")) {
+    } else if (category === "tablet") {
       return "tablet";
     } else {
       return "web";
@@ -90,19 +92,13 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
     const templates = tempMeta;
     const categorized = {
       web: templates.filter((t) => {
-        const metadata = getTemplateMetadata(t.template_id);
-        const templateName = metadata?.name || t.name || "Unknown Template";
-        return categorizeTemplate(templateName) === "web";
+        return categorizeTemplate(t.template_id) === "web";
       }),
       mobile: templates.filter((t) => {
-        const metadata = getTemplateMetadata(t.template_id);
-        const templateName = metadata?.name || t.name || "Unknown Template";
-        return categorizeTemplate(templateName) === "mobile";
+        return categorizeTemplate(t.template_id) === "mobile";
       }),
       tablet: templates.filter((t) => {
-        const metadata = getTemplateMetadata(t.template_id);
-        const templateName = metadata?.name || t.name || "Unknown Template";
-        return categorizeTemplate(templateName) === "tablet";
+        return categorizeTemplate(t.template_id) === "tablet";
       }),
     };
     return categorized;
@@ -257,7 +253,9 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
       template.template ||
       template.name ||
       "Unknown Template";
-    const category = categorizeTemplate(templateName);
+    const category = categorizeTemplate(
+      template.templateId || template.template_id
+    );
 
     // Get the template data from DATA to access footers
     const templateData = DATA[template.templateId || template.template_id];

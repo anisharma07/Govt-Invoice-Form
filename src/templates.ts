@@ -23,6 +23,7 @@ export interface CellMapping {
 export interface TemplateData {
   template: string;
   templateId: number;
+  category: string;
   msc: {
     numsheets: number;
     currentid: string;
@@ -62,6 +63,7 @@ export let DATA: { [key: number]: TemplateData } = {
   1001: {
     template: "Mobile-Invoice-1",
     templateId: 1001,
+    category: "Mobile",
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
       sheet1: "F5",
@@ -72,18 +74,7 @@ export let DATA: { [key: number]: TemplateData } = {
     cellMappings: {
       sheet1: {
         Heading: "B2",
-        Items: {
-          Name: "Items",
-          Rows: {
-            start: 23,
-            end: 35,
-          },
-          Columns: {
-            Description: "C",
-            Amount: "F",
-          },
-        },
-
+        bidi: "B80",
         Date: "D20",
         InvoiceNumber: "C18",
         From: {
@@ -99,6 +90,17 @@ export let DATA: { [key: number]: TemplateData } = {
           CityStateZip: "C7",
           Phone: "C8",
           Email: "C9",
+        },
+        Items: {
+          Name: "Items",
+          Rows: {
+            start: 23,
+            end: 35,
+          },
+          Columns: {
+            Description: "C",
+            Amount: "F",
+          },
         },
       },
     },
@@ -217,6 +219,7 @@ export let DATA: { [key: number]: TemplateData } = {
   1002: {
     template: "Mobile-Tax-Invoice",
     templateId: 1002,
+    category: "Mobile",
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
       sheet1: "F7",
@@ -399,6 +402,7 @@ export let DATA: { [key: number]: TemplateData } = {
   1003: {
     template: "Mobile-Multi-Invoice",
     templateId: 1003,
+    category: "Mobile",
     footers: [
       { name: "Detail1", index: 1, isActive: true },
       { name: "Detail2", index: 2, isActive: false },
@@ -728,6 +732,7 @@ export let DATA: { [key: number]: TemplateData } = {
   3001: {
     template: "Web-Invoice-1",
     templateId: 3001,
+    category: "Web",
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
       sheet1: "F4",
@@ -835,6 +840,7 @@ export let DATA: { [key: number]: TemplateData } = {
   3002: {
     template: "Web-Invoice-2",
     templateId: 3002,
+    category: "Web",
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
       sheet1: "F4",
@@ -958,6 +964,7 @@ export let DATA: { [key: number]: TemplateData } = {
   3003: {
     template: "Company-Invoice-1",
     templateId: 3003,
+    category: "Web",
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
       sheet1: "F4",
@@ -1082,6 +1089,7 @@ export let DATA: { [key: number]: TemplateData } = {
   3004: {
     template: "Company-Invoice-2",
     templateId: 3004,
+    category: "Web",
     footers: [{ name: "Invoice", index: 1, isActive: true }],
     logoCell: {
       sheet1: "F4",

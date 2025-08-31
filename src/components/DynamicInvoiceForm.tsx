@@ -210,7 +210,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
       // Close modal after a short delay
       setTimeout(() => {
         onClose();
-      }, 1500);
+      }, 1000);
     } catch (error) {
       console.error("Error saving invoice data:", error);
       setToastMessage("Failed to save invoice data. Please try again.");

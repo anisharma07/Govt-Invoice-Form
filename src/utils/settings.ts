@@ -7,7 +7,7 @@ interface AppSettings {
 const SETTINGS_KEY = "app_settings";
 
 const defaultSettings: AppSettings = {
-  autoSaveEnabled: true, // Default to enabled
+  autoSaveEnabled: false, // Default to disabled
 };
 
 export const getSettings = (): AppSettings => {

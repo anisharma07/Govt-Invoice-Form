@@ -223,9 +223,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ isOpen, onClose }) => {
       setTimeout(() => {
         onClose();
       }, 1500);
-    } catch (error) {
-      console.error("Error saving invoice data:", error);
-      showToastMessage("Failed to save invoice data", "danger");
+        } catch (error) {
+      setToastMessage("Failed to save invoice data. Please try again.");
+      setToastColor("danger");
+      setShowToast(true);
     }
   };
 
@@ -257,8 +258,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ isOpen, onClose }) => {
       });
       showToastMessage("Invoice data cleared successfully!", "success");
     } catch (error) {
-      console.error("Error clearing invoice data:", error);
-      showToastMessage("Failed to clear invoice data", "danger");
+      setToastMessage("Failed to clear invoice data");
+      setToastColor("danger");
+      setShowToast(true);
     }
   };
 

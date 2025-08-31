@@ -29,6 +29,7 @@ import {
 } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
+import { markUserAsExisting } from "../utils/helper";
 // import { cloudService } from "../services/cloud-service";
 import "./LandingPage.css";
 
@@ -44,6 +45,9 @@ const LandingPage: React.FC = () => {
   }, [history]);
 
   const handleGetStarted = () => {
+    // Mark user as existing (no longer new)
+    markUserAsExisting();
+    // Navigate to the editor
     history.push("/app/editor");
   };
 

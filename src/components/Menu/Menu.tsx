@@ -16,7 +16,7 @@ import {
   documents,
   key,
 } from "ionicons/icons";
-import { APP_NAME, DATA } from "../../app-data";
+import { APP_NAME, DATA } from "../../templates.js";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useInvoice } from "../../contexts/InvoiceContext";
 import { exportHTMLAsPDF } from "../../services/exportAsPdf.js";
@@ -56,9 +56,9 @@ const Menu: React.FC<{
   /* Utility functions */
   const _validateName = async (filename) => {
     filename = filename.trim();
-    if (filename === "default" || filename === "Untitled") {
+    if (filename === "Untitled") {
       setToastMessage(
-        "cannot update default or Untitled file! Use Save As Button to save."
+        "cannot update Untitled file! Use Save As Button to save."
       );
       return false;
     } else if (filename === "" || !filename) {
@@ -103,7 +103,6 @@ const Menu: React.FC<{
         setToastMessage("Print job sent successfully!");
         setShowToast1(true);
       } catch (error) {
-        console.error("Print error:", error);
         setToastMessage(
           "Failed to print. Please check if a printer is available."
         );
@@ -126,7 +125,6 @@ const Menu: React.FC<{
 
       // Get the current HTML content from the spreadsheet
       const htmlContent = AppGeneral.getCurrentHTMLContent();
-      console.log(htmlContent);
 
       if (!htmlContent || htmlContent.trim() === "") {
         setToastMessage("No content available to export as PDF");
@@ -179,8 +177,7 @@ const Menu: React.FC<{
                 setToastMessage(`PDF generated and ready to share!`);
                 setShowToast1(true);
               } catch (shareError) {
-                console.log("Error sharing PDF:", shareError);
-                // Fallback: still generate PDF normally
+                // Error sharing PDF, fallback: still generate PDF normally
                 await exportHTMLAsPDF(htmlContent, {
                   filename: pdfFilename,
                   format: "a4",
@@ -197,8 +194,7 @@ const Menu: React.FC<{
             };
             reader.readAsDataURL(pdfBlob as Blob);
           } catch (error) {
-            console.error("Error processing PDF for sharing:", error);
-            // Fallback to normal PDF generation
+            // Error processing PDF for sharing, fallback to normal PDF generation
             await exportHTMLAsPDF(htmlContent, {
               filename: pdfFilename,
               format: "a4",
@@ -230,7 +226,6 @@ const Menu: React.FC<{
         setShowToast1(true);
       }
     } catch (error) {
-      console.error("Error generating PDF:", error);
       setToastMessage("Failed to generate PDF. Please try again.");
       setShowToast1(true);
     } finally {
@@ -338,6 +333,10 @@ const Menu: React.FC<{
 
       // Get all sheets data using the new function from index.js
       const sheetsData = AppGeneral.getAllSheetsData();
+      if (sheetsData.length > 3) {
+        console.log(sheetsData);
+        return;
+      }
 
       if (!sheetsData || sheetsData.length === 0) {
         setToastMessage("No sheets available to export");

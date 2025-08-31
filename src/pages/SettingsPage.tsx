@@ -15,33 +15,20 @@ import {
   IonItem,
   IonLabel,
   IonList,
-  IonToggle,
-  IonInput,
   IonModal,
   IonToast,
   IonGrid,
   IonRow,
   IonCol,
-  IonSelect,
-  IonSelectOption,
   IonRange,
   IonPopover,
+  IonToggle,
 } from "@ionic/react";
 import {
   saveOutline,
-  cloudUpload,
-  save,
-  print,
-  mail,
   settings,
   informationCircle,
-  moon,
-  sunny,
-  card,
-  alertCircle,
   createOutline,
-  trashOutline,
-  colorPaletteOutline,
   add,
   checkmark,
   pencil,
@@ -49,45 +36,30 @@ import {
   cloudUploadOutline,
   imageOutline,
   downloadOutline,
-  notifications,
   wifiOutline,
   cloudOfflineOutline,
-  cloudDoneOutline,
-  refreshOutline,
-  bug,
+  arrowBack,
+  flash,
 } from "ionicons/icons";
 import SignatureCanvas from "react-signature-canvas";
 import Menu from "../components/Menu/Menu";
-import { Local } from "../components/Storage/LocalStorage";
 import { useTheme } from "../contexts/ThemeContext";
-import { useInvoice } from "../contexts/InvoiceContext";
-import PWAInstallPrompt from "../components/PWAInstallPrompt";
-import PWADemo from "../components/PWADemo";
-// import { usePushNotifications } from "../utils/pushNotifications";
+import { useHistory } from "react-router-dom";
 import { usePWA } from "../hooks/usePWA";
+import { resetUserOnboarding } from "../utils/helper";
+import { getAutoSaveEnabled, setAutoSaveEnabled } from "../utils/settings";
 import "./SettingsPage.css";
-// import {
-//   cloudService,
-//   ServerFile,
-//   LoginCredentials,
-//   RegisterCredentials,
-// } from "../services/cloud-service";
-// import { useAccount, useConnect, useDisconnect } from "@starknet-react/core";
-// import { useGetUserFileLimits } from "../hooks/useContractRead";
 
 const SettingsPage: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
   const { isDarkMode, toggleDarkMode } = useTheme();
+  const history = useHistory();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showResetToast, setShowResetToast] = useState(false);
+  const [globalAutoSaveEnabled, setGlobalAutoSaveEnabled] = useState(getAutoSaveEnabled());
 
-  // PWA features
-  // Push notifications disabled in local-only mode
-  // const { requestPermission, subscribe, getPermissionState } =
-  //   usePushNotifications();
-  const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermission>("default");
   const { isInstallable, isInstalled, isOnline, installApp } = usePWA();
 
   // Signature state
@@ -142,7 +114,7 @@ const SettingsPage: React.FC = () => {
         const signatures = JSON.parse(saved);
         setSavedSignatures(signatures);
       } catch (error) {
-        console.error("Error parsing saved signatures:", error);
+        // Error parsing saved signatures, use empty array
         setSavedSignatures([]);
       }
     }
@@ -162,7 +134,7 @@ const SettingsPage: React.FC = () => {
         const logos = JSON.parse(saved);
         setSavedLogos(logos);
       } catch (error) {
-        console.error("Error parsing saved logos:", error);
+        // Error parsing saved logos, use empty array
         setSavedLogos([]);
       }
     }
@@ -386,7 +358,6 @@ const SettingsPage: React.FC = () => {
         setShowToast(true);
       }
     } catch (error) {
-      console.error("Error saving signature:", error);
       setToastMessage("Error saving signature. Please try again.");
       setShowToast(true);
     }
@@ -612,7 +583,6 @@ const SettingsPage: React.FC = () => {
       setToastMessage("Signature uploaded successfully!");
       setShowToast(true);
     } catch (error) {
-      console.error("Error saving uploaded signature:", error);
       setToastMessage("Error saving signature. Please try again.");
       setShowToast(true);
     }
@@ -646,7 +616,6 @@ const SettingsPage: React.FC = () => {
       setToastMessage("Logo saved successfully");
       setShowToast(true);
     } catch (error) {
-      console.error("Error saving logo:", error);
       setToastMessage("Error saving logo. Please try again.");
       setShowToast(true);
     }
@@ -806,7 +775,6 @@ const SettingsPage: React.FC = () => {
       setSelectedLogoFile(null);
       setLogoUploadPreview(null);
     } catch (error) {
-      console.error("Error saving uploaded logo:", error);
       setToastMessage("Error saving logo. Please try again.");
       setShowToast(true);
     }
@@ -839,6 +807,18 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleResetOnboarding = () => {
+    resetUserOnboarding();
+    setShowResetToast(true);
+  };
+
+  const handleAutoSaveToggle = (enabled: boolean) => {
+    setGlobalAutoSaveEnabled(enabled);
+    setAutoSaveEnabled(enabled);
+    setToastMessage(`Auto-save ${enabled ? 'enabled' : 'disabled'} by default for new files`);
+    setShowToast(true);
+  };
+
   React.useEffect(() => {
     // Push notifications disabled in local-only mode
     // getPermissionState().then((state) => {
@@ -852,18 +832,17 @@ const SettingsPage: React.FC = () => {
     >
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="start">
+            <IonButton 
+              fill="clear" 
+              onClick={() => history.push("/app/files")}
+            >
+              <IonIcon icon={arrowBack} />
+            </IonButton>
+          </IonButtons>
           <IonTitle style={{ fontWeight: "bold", fontSize: "1.3em" }}>
             Settings
           </IonTitle>
-          <IonButtons slot="end">
-            <IonButton
-              fill="clear"
-              onClick={toggleDarkMode}
-              style={{ fontSize: "1.5em" }}
-            >
-              <IonIcon icon={isDarkMode ? sunny : moon} />
-            </IonButton>
-          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent
@@ -873,6 +852,138 @@ const SettingsPage: React.FC = () => {
         }
       >
         <div className="settings-container">
+          <div
+            className={`signature-section ${isDarkMode ? "" : "light-mode"}`}
+          >
+            {/* Settings Card */}
+            <IonCard
+              className={
+                isDarkMode ? "settings-card-dark" : "settings-card-light"
+              }
+            >
+              <IonCardHeader
+                className={
+                  isDarkMode
+                    ? "settings-card-header-dark"
+                    : "settings-card-header-light"
+                }
+              >
+                <IonCardTitle
+                  className={
+                    isDarkMode
+                      ? "settings-card-title-dark"
+                      : "settings-card-title-light"
+                  }
+                >
+                  <IonIcon
+                    icon={settings}
+                    style={{ marginRight: "8px", fontSize: "1.5em" }}
+                  />
+                  Preferences
+                </IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <IonList>
+                  <IonItem>
+                    <IonIcon icon={flash} slot="start" />
+                    <IonLabel>
+                      <h3>Auto-save by Default</h3>
+                      <p>Enable auto-save for newly opened files</p>
+                    </IonLabel>
+                    <IonToggle
+                      slot="end"
+                      checked={globalAutoSaveEnabled}
+                      onIonChange={(e) => handleAutoSaveToggle(e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem button onClick={handleResetOnboarding}>
+                    <IonIcon icon={informationCircle} slot="start" />
+                    <IonLabel>
+                      <h3>Reset Onboarding</h3>
+                      <p>Show landing page on next visit</p>
+                    </IonLabel>
+                  </IonItem>
+                </IonList>
+              </IonCardContent>
+            </IonCard>
+          </div>
+
+          {/* PWA Status Card */}
+          <div className="signature-section" style={{ marginBottom: "20px" }}>
+            <IonCard
+              className={
+                isDarkMode ? "settings-card-dark" : "settings-card-light"
+              }
+            >
+              <IonCardHeader
+                className={
+                  isDarkMode
+                    ? "settings-card-header-dark"
+                    : "settings-card-header-light"
+                }
+              >
+                <IonCardTitle
+                  className={
+                    isDarkMode
+                      ? "settings-card-title-dark"
+                      : "settings-card-title-light"
+                  }
+                >
+                  <IonIcon
+                    icon={wifiOutline}
+                    style={{ marginRight: "8px", fontSize: "1.5em" }}
+                  />
+                  App Status
+                </IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <IonList>
+                  <IonItem>
+                    <IonIcon
+                      icon={isOnline ? wifiOutline : cloudOfflineOutline}
+                      slot="start"
+                      style={{
+                        color: isOnline ? "#28ba62" : "#f04141",
+                      }}
+                    />
+                    <IonLabel>
+                      <h3>Connection Status</h3>
+                      <p>{isOnline ? "Online" : "Offline"}</p>
+                    </IonLabel>
+                  </IonItem>
+
+                  {isInstallable && !isInstalled && (
+                    <IonItem button onClick={installApp}>
+                      <IonIcon
+                        icon={downloadOutline}
+                        slot="start"
+                        style={{ color: "#3880ff" }}
+                      />
+                      <IonLabel>
+                        <h3>Install App</h3>
+                        <p>Install as a Progressive Web App</p>
+                      </IonLabel>
+                    </IonItem>
+                  )}
+
+                  {isInstalled && (
+                    <IonItem>
+                      <IonIcon
+                        icon={checkmark}
+                        slot="start"
+                        style={{ color: "#28ba62" }}
+                      />
+                      <IonLabel>
+                        <h3>App Installed</h3>
+                        <p>Running as installed PWA</p>
+                      </IonLabel>
+                    </IonItem>
+                  )}
+                </IonList>
+              </IonCardContent>
+            </IonCard>
+          </div>
+
           {/* Signature Section */}
           <div className="signature-section" style={{ marginBottom: "20px" }}>
             <IonCard
@@ -1321,208 +1432,6 @@ const SettingsPage: React.FC = () => {
                 </div>
               </IonCardContent>
             </IonCard>
-          </div>
-
-          <IonHeader collapse="condense">
-            <IonToolbar>
-              <IonTitle size="large">Menu & Settings</IonTitle>
-              <IonButtons slot="end">
-                <IonButton
-                  fill="clear"
-                  onClick={toggleDarkMode}
-                  style={{ fontSize: "1.5em" }}
-                >
-                  <IonIcon icon={isDarkMode ? sunny : moon} />
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-
-          <div
-            className={`menu-page-container ${isDarkMode ? "" : "light-mode"}`}
-          >
-            {/* Settings Card */}
-            <IonCard
-              className={
-                isDarkMode ? "settings-card-dark" : "settings-card-light"
-              }
-            >
-              <IonCardHeader
-                className={
-                  isDarkMode
-                    ? "settings-card-header-dark"
-                    : "settings-card-header-light"
-                }
-              >
-                <IonCardTitle
-                  className={
-                    isDarkMode
-                      ? "settings-card-title-dark"
-                      : "settings-card-title-light"
-                  }
-                >
-                  <IonIcon
-                    icon={settings}
-                    style={{ marginRight: "8px", fontSize: "1.5em" }}
-                  />
-                  Preferences
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList>
-                  <IonItem>
-                    <IonIcon icon={isDarkMode ? moon : sunny} slot="start" />
-                    <IonLabel>Dark Mode</IonLabel>
-                    <IonToggle
-                      checked={isDarkMode}
-                      onIonChange={(e) => toggleDarkMode()}
-                      slot="end"
-                    />
-                  </IonItem>
-                </IonList>
-              </IonCardContent>
-            </IonCard>
-
-            {/* PWA Status Card */}
-            <IonCard
-              className={
-                isDarkMode ? "settings-card-dark" : "settings-card-light"
-              }
-            >
-              <IonCardHeader
-                className={
-                  isDarkMode
-                    ? "settings-card-header-dark"
-                    : "settings-card-header-light"
-                }
-              >
-                <IonCardTitle
-                  className={
-                    isDarkMode
-                      ? "settings-card-title-dark"
-                      : "settings-card-title-light"
-                  }
-                >
-                  <IonIcon
-                    icon={downloadOutline}
-                    style={{ marginRight: "8px", fontSize: "1.5em" }}
-                  />
-                  PWA Features
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList>
-                  <IonItem>
-                    <IonIcon
-                      icon={downloadOutline}
-                      slot="start"
-                      color={
-                        isInstallable && !isInstalled ? "success" : "medium"
-                      }
-                    />
-                    <IonLabel>
-                      <h2>App Installation</h2>
-                      <p>
-                        {isInstalled
-                          ? "✓ App is installed"
-                          : isInstallable
-                          ? "Ready to install - Click to add to home screen"
-                          : "Installation not available (may already be installed)"}
-                      </p>
-                    </IonLabel>
-                    {isInstallable && !isInstalled && (
-                      <IonButton
-                        fill="outline"
-                        size="small"
-                        onClick={async () => {
-                          const success = await installApp();
-                          if (success) {
-                            setToastMessage("App installed successfully!");
-                            setShowToast(true);
-                          }
-                        }}
-                        slot="end"
-                      >
-                        Install
-                      </IonButton>
-                    )}
-                  </IonItem>
-
-                  <IonItem>
-                    <IonIcon
-                      icon={isOnline ? wifiOutline : cloudOfflineOutline}
-                      slot="start"
-                      color={isOnline ? "success" : "warning"}
-                    />
-                    <IonLabel>
-                      <h2>Connection Status</h2>
-                      <p>
-                        {isOnline
-                          ? "✓ Online - All features available"
-                          : "⚠ Offline - Limited functionality"}
-                      </p>
-                    </IonLabel>
-                  </IonItem>
-
-                  <IonItem>
-                    <IonIcon
-                      icon={notifications}
-                      slot="start"
-                      color={
-                        notificationPermission === "granted"
-                          ? "success"
-                          : "medium"
-                      }
-                    />
-                    <IonLabel>
-                      <h2>Push Notifications</h2>
-                      <p>
-                        {notificationPermission === "granted"
-                          ? "✓ Enabled - You'll receive updates"
-                          : "Enable notifications for app updates"}
-                      </p>
-                    </IonLabel>
-                    {notificationPermission !== "granted" && (
-                      <IonButton
-                        fill="outline"
-                        size="small"
-                        onClick={handleNotificationPermission}
-                        slot="end"
-                      >
-                        Enable
-                      </IonButton>
-                    )}
-                  </IonItem>
-
-                  <IonItem>
-                    <IonIcon
-                      icon={cloudDoneOutline}
-                      slot="start"
-                      color="success"
-                    />
-                    <IonLabel>
-                      <h2>Offline Storage</h2>
-                      <p>✓ Your data is saved locally and syncs when online</p>
-                    </IonLabel>
-                  </IonItem>
-
-                  <IonItem>
-                    <IonIcon
-                      icon={refreshOutline}
-                      slot="start"
-                      color="success"
-                    />
-                    <IonLabel>
-                      <h2>Auto Updates</h2>
-                      <p>✓ App updates automatically in the background</p>
-                    </IonLabel>
-                  </IonItem>
-                </IonList>
-              </IonCardContent>
-            </IonCard>
-
-            {/* PWA Demo Component */}
-            <PWADemo />
           </div>
         </div>
 
@@ -2193,6 +2102,16 @@ const SettingsPage: React.FC = () => {
             ? "warning"
             : "danger"
         }
+      />
+
+      {/* Toast for reset onboarding confirmation */}
+      <IonToast
+        isOpen={showResetToast}
+        onDidDismiss={() => setShowResetToast(false)}
+        message="Onboarding reset! Landing page will show on next visit."
+        duration={3000}
+        position="bottom"
+        color="success"
       />
     </IonPage>
   );

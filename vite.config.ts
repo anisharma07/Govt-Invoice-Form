@@ -4,12 +4,15 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/',
   plugins: [
     react(), 
     VitePWA({ 
       registerType: "autoUpdate",
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,txt,woff2}'],
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\./,

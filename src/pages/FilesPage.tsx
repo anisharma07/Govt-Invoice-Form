@@ -940,7 +940,9 @@ const FilesPage: React.FC = () => {
                     return (
                       <div
                         key={template.templateId}
-                        onClick={() => handleTemplateSelect(template.templateId)}
+                        onClick={() =>
+                          handleTemplateSelect(template.templateId)
+                        }
                         style={{
                           border: "2px solid var(--ion-color-light)",
                           borderRadius: "12px",

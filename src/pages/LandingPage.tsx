@@ -45,15 +45,15 @@ const LandingPage: React.FC = () => {
   }, [history]);
 
   const handleGetStarted = () => {
-    console.log("handleGetStarted called");
+    
     try {
       // Mark user as existing (no longer new)
       markUserAsExisting();
-      console.log("User marked as existing");
+      
       // Navigate to the files page - use replace to avoid back button issues
-      console.log("Navigating to /app/files");
+      
       history.replace("/app/files");
-      console.log("Navigation completed");
+      
     } catch (error) {
       console.error("Error in handleGetStarted:", error);
     }

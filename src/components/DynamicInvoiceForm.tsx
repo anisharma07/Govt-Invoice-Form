@@ -22,21 +22,13 @@ import {
   IonTextarea,
   IonChip,
   IonAlert,
+  IonDatetime,
+  IonPopover,
 } from "@ionic/react";
-import {
-  close,
-  save,
-  trash,
-  layers,
-  refresh,
-  add,
-  remove,
-} from "ionicons/icons";
+import { close, save, trash, refresh, add, remove } from "ionicons/icons";
 import { useInvoice } from "../contexts/InvoiceContext";
 import {
-  addInvoiceData,
   addDynamicInvoiceData,
-  clearInvoiceData,
   getDynamicInvoiceData,
 } from "./socialcalc/modules/invoice.js";
 import {
@@ -50,11 +42,13 @@ import "./InvoiceForm.css";
 interface DynamicInvoiceFormProps {
   isOpen: boolean;
   onClose: () => void;
+  setAutosaveCount: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
   isOpen,
   onClose,
+  setAutosaveCount,
 }) => {
   const { activeTemplateData, currentSheetId, selectedFile } = useInvoice();
   const [formData, setFormData] = useState<ProcessedFormData>({});
@@ -63,7 +57,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
   const [toastColor, setToastColor] = useState<
     "success" | "danger" | "warning"
   >("success");
-  const [lastSyncTime, setLastSyncTime] = useState<number>(0);
   const [showRefreshAlert, setShowRefreshAlert] = useState(false);
 
   // Get current template data
@@ -96,8 +89,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
           DynamicFormManager.getAllCellReferences(formSections);
 
         if (cellReferences.length > 0) {
-          console.log("Loading existing data from cells:", cellReferences);
-
           // Get existing data from the spreadsheet
           const existingCellData = await getDynamicInvoiceData(cellReferences);
 
@@ -108,7 +99,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
               formSections
             );
 
-          console.log("Loaded existing form data:", existingFormData);
           setFormData(existingFormData);
         } else {
           // No cell references, initialize with empty data
@@ -116,7 +106,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
           setFormData(initData);
         }
       } catch (error) {
-        console.error("Error loading existing form data:", error);
         // Fall back to empty initialization
         const initData = DynamicFormManager.initializeFormData(formSections);
         setFormData(initData);
@@ -196,57 +185,19 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
         effectiveSheetId
       );
 
-      console.log("Cell data to be saved:", cellData);
-      console.log("Effective sheet ID:", effectiveSheetId);
-
       // Use the new addDynamicInvoiceData function that handles cell references
       await addDynamicInvoiceData(cellData, effectiveSheetId);
 
-      // Update last sync time to prevent immediate auto-sync
-      setLastSyncTime(Date.now());
-
       showToastMessage("Invoice data saved successfully!", "success");
-
+      setAutosaveCount((prev) => prev + 1); // Increment autosave count
       // Close modal after a short delay
       setTimeout(() => {
         onClose();
-      }, 1000);
+      }, 500);
     } catch (error) {
-      console.error("Error saving invoice data:", error);
       setToastMessage("Failed to save invoice data. Please try again.");
       setToastColor("danger");
       setShowToast(true);
-    }
-  };
-
-  const saveToSheet = async () => {
-    try {
-      // Validate form data
-      const validation = DynamicFormManager.validateFormData(
-        formData,
-        formSections
-      );
-      if (!validation.isValid) {
-        console.log("Validation errors during save:", validation.errors);
-        return;
-      }
-
-      // Convert form data to spreadsheet format
-      const cellData = DynamicFormManager.convertToSpreadsheetFormat(
-        formData,
-        formSections,
-        effectiveSheetId
-      );
-
-      console.log("Saving to sheet after item change:", cellData);
-
-      // Use the new addDynamicInvoiceData function that handles cell references
-      await addDynamicInvoiceData(cellData, effectiveSheetId);
-
-      // Update last sync time to prevent immediate auto-sync
-      setLastSyncTime(Date.now());
-    } catch (error) {
-      console.error("Error saving to sheet:", error);
     }
   };
 
@@ -260,7 +211,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
         "success"
       );
     } catch (error) {
-      console.error("Error clearing form data:", error);
       showToastMessage("Failed to clear form data", "danger");
     }
   };
@@ -272,8 +222,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
         DynamicFormManager.getAllCellReferences(formSections);
 
       if (cellReferences.length > 0) {
-        console.log("Silently refreshing data from cells:", cellReferences);
-
         // Get current data from the spreadsheet
         const currentCellData = await getDynamicInvoiceData(cellReferences);
 
@@ -284,12 +232,9 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
             formSections
           );
 
-        console.log("Silent refresh - form data updated:", refreshedFormData);
         setFormData(refreshedFormData);
       }
-    } catch (error) {
-      console.error("Error during silent refresh:", error);
-    }
+    } catch (error) {}
   };
 
   const performRefresh = async () => {
@@ -299,8 +244,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
         DynamicFormManager.getAllCellReferences(formSections);
 
       if (cellReferences.length > 0) {
-        console.log("Refreshing data from cells:", cellReferences);
-
         // Get current data from the spreadsheet
         const currentCellData = await getDynamicInvoiceData(cellReferences);
 
@@ -311,14 +254,12 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
             formSections
           );
 
-        console.log("Refreshed form data:", refreshedFormData);
         setFormData(refreshedFormData);
         showToastMessage("Form data refreshed from spreadsheet!", "success");
       } else {
         showToastMessage("No data to refresh", "warning");
       }
     } catch (error) {
-      console.error("Error refreshing form data:", error);
       showToastMessage("Failed to refresh form data", "danger");
     }
   };
@@ -337,7 +278,10 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
         section.itemsConfig!.range.end - section.itemsConfig!.range.start + 1;
 
       if (currentItems.length >= maxItems) {
-        showToastMessage(`Maximum ${maxItems} items allowed`, "warning");
+        showToastMessage(
+          `Maximum ${maxItems} ${section.itemsConfig.name.toLowerCase()}s allowed`,
+          "warning"
+        );
         return prev;
       }
 
@@ -354,11 +298,17 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
   };
 
   const handleRemoveItem = (sectionTitle: string, itemIndex: number) => {
+    const section = formSections.find((s) => s.title === sectionTitle);
+    if (!section || !section.itemsConfig) return;
+
     setFormData((prev) => {
       const currentItems = prev[sectionTitle] as any[];
 
       if (currentItems.length <= 1) {
-        showToastMessage("At least one item is required", "warning");
+        showToastMessage(
+          `At least one ${section.itemsConfig.name.toLowerCase()} is required`,
+          "warning"
+        );
         return prev;
       }
 
@@ -404,6 +354,39 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
               }
               placeholder={`Enter ${field.label.toLowerCase()}`}
             />
+          </IonItem>
+        );
+      case "date":
+        return (
+          <IonItem
+            key={field.label}
+            button={true}
+            id={`date-trigger-${field.label.replace(/\s+/g, "-")}`}
+          >
+            <IonLabel position="stacked">{field.label}</IonLabel>
+            <IonInput
+              value={value ? new Date(value).toLocaleDateString() : ""}
+              readonly={true}
+              placeholder="Select date"
+            />
+            <IonPopover
+              trigger={`date-trigger-${field.label.replace(/\s+/g, "-")}`}
+              showBackdrop={false}
+            >
+              <IonDatetime
+                value={value || new Date().toISOString()}
+                onIonChange={(e) => {
+                  const selectedDate = e.detail.value as string;
+                  if (selectedDate) {
+                    // Format date as YYYY-MM-DD for storage
+                    const formattedDate = selectedDate.split("T")[0];
+                    handleFieldChange(sectionTitle, field.label, formattedDate);
+                  }
+                }}
+                presentation="date"
+                preferWheel={true}
+              />
+            </IonPopover>
           </IonItem>
         );
       case "number":
@@ -467,7 +450,9 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
           {items.map((item, index) => (
             <div key={index} className="item-group">
               <IonItemDivider>
-                <IonLabel>Item {index + 1}</IonLabel>
+                <IonLabel>
+                  {section.itemsConfig.name} {index + 1}
+                </IonLabel>
                 {items.length > 1 && (
                   <IonButton
                     fill="clear"
@@ -480,33 +465,81 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
                 )}
               </IonItemDivider>
               {Object.entries(section.itemsConfig!.content).map(
-                ([fieldName, cellColumn]) => (
-                  <IonItem key={`${index}-${fieldName}`}>
-                    <IonLabel position="stacked">{fieldName}</IonLabel>
-                    <IonInput
-                      type={
-                        DynamicFormManager.getFieldType(fieldName) === "decimal"
-                          ? "number"
-                          : "text"
-                      }
-                      step={
-                        DynamicFormManager.getFieldType(fieldName) === "decimal"
-                          ? "0.01"
-                          : undefined
-                      }
-                      value={item[fieldName] || ""}
-                      onIonInput={(e) =>
-                        handleItemChange(
-                          section.title,
-                          index,
-                          fieldName,
-                          e.detail.value!
-                        )
-                      }
-                      placeholder={`Enter ${fieldName.toLowerCase()}`}
-                    />
-                  </IonItem>
-                )
+                ([fieldName, cellColumn]) => {
+                  const fieldType = DynamicFormManager.getFieldType(fieldName);
+                  const itemValue = item[fieldName] || "";
+
+                  if (fieldType === "date") {
+                    return (
+                      <IonItem
+                        key={`${index}-${fieldName}`}
+                        button={true}
+                        id={`item-date-trigger-${index}-${fieldName.replace(
+                          /\s+/g,
+                          "-"
+                        )}`}
+                      >
+                        <IonLabel position="stacked">{fieldName}</IonLabel>
+                        <IonInput
+                          value={
+                            itemValue
+                              ? new Date(itemValue).toLocaleDateString()
+                              : ""
+                          }
+                          readonly={true}
+                          placeholder="Select date"
+                        />
+                        <IonPopover
+                          trigger={`item-date-trigger-${index}-${fieldName.replace(
+                            /\s+/g,
+                            "-"
+                          )}`}
+                          showBackdrop={false}
+                        >
+                          <IonDatetime
+                            value={itemValue || new Date().toISOString()}
+                            onIonChange={(e) => {
+                              const selectedDate = e.detail.value as string;
+                              if (selectedDate) {
+                                // Format date as YYYY-MM-DD for storage
+                                const formattedDate =
+                                  selectedDate.split("T")[0];
+                                handleItemChange(
+                                  section.title,
+                                  index,
+                                  fieldName,
+                                  formattedDate
+                                );
+                              }
+                            }}
+                            presentation="date"
+                            preferWheel={true}
+                          />
+                        </IonPopover>
+                      </IonItem>
+                    );
+                  }
+
+                  return (
+                    <IonItem key={`${index}-${fieldName}`}>
+                      <IonLabel position="stacked">{fieldName}</IonLabel>
+                      <IonInput
+                        type={fieldType === "decimal" ? "number" : "text"}
+                        step={fieldType === "decimal" ? "0.01" : undefined}
+                        value={itemValue}
+                        onIonInput={(e) =>
+                          handleItemChange(
+                            section.title,
+                            index,
+                            fieldName,
+                            e.detail.value!
+                          )
+                        }
+                        placeholder={`Enter ${fieldName.toLowerCase()}`}
+                      />
+                    </IonItem>
+                  );
+                }
               )}
             </div>
           ))}
@@ -520,7 +553,7 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
               disabled={items.length >= maxItems}
             >
               <IonIcon icon={add} slot="start" />
-              Add Item ({items.length}/{maxItems})
+              Add {section.itemsConfig.name} ({items.length}/{maxItems})
             </IonButton>
           </div>
         </IonCardContent>
@@ -580,6 +613,12 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
           <IonToolbar color="primary">
             <IonTitle>Edit {selectedFile}</IonTitle>
             <IonButtons slot="end">
+              <IonButton onClick={handleSave} fill="clear" color="light">
+                <IonIcon icon={save} />
+              </IonButton>
+              <IonButton onClick={handleClear} fill="clear" color="light">
+                <IonIcon icon={trash} />
+              </IonButton>
               <IonButton onClick={handleRefresh} fill="clear">
                 <IonIcon icon={refresh} />
               </IonButton>
@@ -604,23 +643,6 @@ const DynamicInvoiceForm: React.FC<DynamicInvoiceFormProps> = ({
           <IonGrid>
             {formSections.map((section) => renderSection(section))}
           </IonGrid>
-
-          {/* Action Buttons */}
-          <div style={{ padding: "20px", display: "flex", gap: "10px" }}>
-            <IonButton onClick={handleSave} color="primary" style={{ flex: 1 }}>
-              <IonIcon icon={save} slot="start" />
-              Save Data
-            </IonButton>
-            <IonButton
-              onClick={handleClear}
-              color="danger"
-              fill="outline"
-              style={{ flex: 1 }}
-            >
-              <IonIcon icon={trash} slot="start" />
-              Clear All
-            </IonButton>
-          </div>
         </IonContent>
       </IonModal>
 

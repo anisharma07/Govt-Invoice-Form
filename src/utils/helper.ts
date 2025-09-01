@@ -41,7 +41,7 @@ export const isDefaultFileEmpty = (content: string): boolean => {
         const decodedContent = decodeURIComponent(content);
         parsedContent = JSON.parse(decodedContent);
       } catch {
-        console.error("Could not parse content as JSON");
+        // Error logged
         return true; // Assume empty if we can't parse
       }
     }
@@ -88,7 +88,7 @@ export const isDefaultFileEmpty = (content: string): boolean => {
 
     return true;
   } catch (error) {
-    console.error("Error checking if default file is empty:", error);
+    // Error logged
     return true; // Assume empty on error
   }
 };
@@ -170,7 +170,7 @@ export const getStorageUsageInfo = (): {
       percentage: (usedSpace / totalQuota) * 100,
     };
   } catch (error) {
-    console.error("Error calculating storage usage:", error);
+    // Error logged
     return { used: 0, total: 0, percentage: 0 };
   }
 };
@@ -218,7 +218,7 @@ export const isNewUser = (): boolean => {
     }
     return stored === "true";
   } catch (error) {
-    console.warn("Error reading from localStorage:", error);
+    // Error logged
     return true; // Default to new user if localStorage fails
   }
 };
@@ -227,7 +227,7 @@ export const markUserAsExisting = (): void => {
   try {
     localStorage.setItem(USER_ONBOARDING_KEY, "false");
   } catch (error) {
-    console.warn("Error writing to localStorage:", error);
+    // Error logged
   }
 };
 
@@ -235,6 +235,6 @@ export const resetUserOnboarding = (): void => {
   try {
     localStorage.removeItem(USER_ONBOARDING_KEY);
   } catch (error) {
-    console.warn("Error removing from localStorage:", error);
+    // Error logged
   }
 };

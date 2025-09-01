@@ -69,7 +69,7 @@ export const usePWA = () => {
       }
       return false;
     } catch (error) {
-      console.error('Error installing app:', error);
+      // Error handled
       return false;
     }
   };

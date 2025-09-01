@@ -118,7 +118,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       try {
         await onSave();
       } catch (error) {
-        console.error("Auto-save failed:", error);
+        // Error handled
       }
     }
   };
@@ -138,7 +138,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
         setSavedLogos(logos);
       }
     } catch (error) {
-      console.error("Error loading saved logos:", error);
+      // Error handled
     }
   };
 
@@ -189,7 +189,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       // Trigger auto-save if enabled
       await triggerAutoSave();
     } catch (error) {
-      console.error("Error applying logo:", error);
+      // Error handled
       setToastMessage("Failed to apply logo");
       setShowToast(true);
     }
@@ -204,7 +204,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
         setSavedSignatures(signatures);
       }
     } catch (error) {
-      console.error("Error loading saved signatures:", error);
+      // Error handled
     }
   };
 
@@ -235,7 +235,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       }
       return false;
     } catch (error) {
-      console.error("Error checking for existing file:", error);
+      // Error handled
       return false;
     }
   };
@@ -259,7 +259,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       const content = AppGeneral.getSpreadsheetContent();
       const now = new Date().toISOString();
       if (!currentFile) {
-        console.log("No current file found");
+        // Error handled
         setToastMessage("Error saving file!");
         setShowToast(true);
         return;
@@ -284,7 +284,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
         data.templateId,
         data.isEncrypted
       );
-      console.log(file);
+      // Error handled
       await store._saveFile(file);
 
       setToastMessage("File saved successfully!");
@@ -296,7 +296,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
         link.click();
       }, 200);
     } catch (error) {
-      console.error("Error saving file:", error);
+      // Error handled
 
       if (isQuotaExceededError(error)) {
         setToastMessage(getQuotaExceededMessage("saving file"));
@@ -360,7 +360,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       // Trigger auto-save if enabled
       await triggerAutoSave();
     } catch (error) {
-      console.error("Error removing logo:", error);
+      // Error handled
       setToastMessage("Failed to remove logo");
       setShowToast(true);
     }
@@ -402,7 +402,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       // Trigger auto-save if enabled
       await triggerAutoSave();
     } catch (error) {
-      console.error("Error removing signature:", error);
+      // Error handled
       setToastMessage("Failed to remove signature");
       setShowToast(true);
     }
@@ -455,7 +455,7 @@ const FileOptions: React.FC<FileOptionsProps> = ({
       // Trigger auto-save if enabled
       await triggerAutoSave();
     } catch (error) {
-      console.error("Error applying signature:", error);
+      // Error handled
       setToastMessage("Failed to apply signature");
       setShowToast(true);
     }

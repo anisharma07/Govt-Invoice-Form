@@ -7,7 +7,6 @@ if (typeof window !== "undefined" && window.SocialCalc) {
 } else if (typeof global !== "undefined" && global.SocialCalc) {
   SocialCalc = global.SocialCalc;
 } else {
-  console.error("SocialCalc not found in global scope");
   SocialCalc = {}; // Fallback to prevent errors
 }
 
@@ -16,7 +15,6 @@ export function changeSheetColor(name) {
   var editor = control.workbook.spreadsheet.editor;
 
   name = name.toLowerCase();
-  //console.log("changing sheet color to: "+name);
   SocialCalc.EditorChangeSheetcolor(editor, name);
 }
 
@@ -53,7 +51,6 @@ export function executeCommand(cmdline) {
 }
 
 export function applySelectedFormatting(coord, formatting) {
-  console.log("Applying formatting:", formatting, "to cell:", coord);
 
   const control = SocialCalc.GetCurrentWorkBookControl();
   const editor = control.workbook.spreadsheet.editor;
@@ -76,7 +73,6 @@ export function applySelectedFormatting(coord, formatting) {
     } else {
       // Fallback to direct command
       const cmd = `set ${coord} font * * ${formatting.fontSize}`;
-      console.log("Executing font command:", cmd);
       editor.EditorScheduleSheetCommands(cmd, true, false);
     }
   }
@@ -88,14 +84,12 @@ export function applySelectedFormatting(coord, formatting) {
     } else {
       // Fallback to direct command
       const cmd = `set ${coord} color ${formatting.fontColor}`;
-      console.log("Executing color command:", cmd);
       editor.EditorScheduleSheetCommands(cmd, true, false);
     }
   }
 
   if (formatting.bgColor) {
     const cmd = `set ${coord} bgcolor ${formatting.bgColor}`;
-    console.log("Executing bgcolor command:", cmd);
     editor.EditorScheduleSheetCommands(cmd, true, false);
   }
 
@@ -104,24 +98,20 @@ export function applySelectedFormatting(coord, formatting) {
 }
 
 export function resetCellFormatting(coord) {
-  console.log("Resetting formatting for cell:", coord);
 
   const control = SocialCalc.GetCurrentWorkBookControl();
   const editor = control.workbook.spreadsheet.editor;
 
   // Reset font to default using SocialCalc command
   const fontCmd = `set ${coord} font * * *`;
-  console.log("Executing reset font command:", fontCmd);
   editor.EditorScheduleSheetCommands(fontCmd, true, false);
 
   // Reset color to default
   const colorCmd = `set ${coord} color *`;
-  console.log("Executing reset color command:", colorCmd);
   editor.EditorScheduleSheetCommands(colorCmd, true, false);
 
   // Reset background color to default
   const bgCmd = `set ${coord} bgcolor *`;
-  console.log("Executing reset bgcolor command:", bgCmd);
   editor.EditorScheduleSheetCommands(bgCmd, true, false);
 
   // Redisplay to show changes

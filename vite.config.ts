@@ -88,6 +88,7 @@ export default defineConfig({
   },
   esbuild: {
     target: "es2020",
+    drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
   },
   optimizeDeps: {
     esbuildOptions: {

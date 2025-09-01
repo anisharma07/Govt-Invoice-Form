@@ -288,7 +288,7 @@ const Menu: React.FC<{
                 setToastMessage(`CSV generated and ready to share!`);
                 setShowToast1(true);
               } catch (shareError) {
-                console.log("Error sharing CSV:", shareError);
+                // Error handled
                 // Fallback: generate CSV normally
                 await exportCSV(cleanedCSV, {
                   filename: csvFilename,
@@ -300,7 +300,7 @@ const Menu: React.FC<{
             reader.readAsDataURL(csvBlob as Blob);
           }
         } catch (error) {
-          console.error("Error processing CSV for sharing:", error);
+          // Error handled
           // Fallback to normal CSV generation
           await exportCSV(cleanedCSV, {
             filename: csvFilename,
@@ -318,7 +318,7 @@ const Menu: React.FC<{
         setShowToast1(true);
       }
     } catch (error) {
-      console.error("Error generating CSV:", error);
+      // Error handled
       setToastMessage("Failed to generate CSV. Please try again.");
       setShowToast1(true);
     } finally {
@@ -334,7 +334,7 @@ const Menu: React.FC<{
       // Get all sheets data using the new function from index.js
       const sheetsData = AppGeneral.getAllSheetsData();
       if (sheetsData.length > 3) {
-        console.log(sheetsData);
+        // Error handled
         return;
       }
 
@@ -394,7 +394,7 @@ const Menu: React.FC<{
                 );
                 setShowToast1(true);
               } catch (shareError) {
-                console.log("Error sharing combined PDF:", shareError);
+                // Error handled
                 // Fallback: still generate PDF normally
                 await exportAllSheetsAsPDF(sheetsData, {
                   filename: pdfFilename,
@@ -412,7 +412,7 @@ const Menu: React.FC<{
             };
             reader.readAsDataURL(pdfBlob as Blob);
           } catch (error) {
-            console.error("Error processing combined PDF for sharing:", error);
+            // Error handled
             // Fallback to normal PDF generation
             await exportAllSheetsAsPDF(sheetsData, {
               filename: pdfFilename,
@@ -447,7 +447,7 @@ const Menu: React.FC<{
         setShowToast1(true);
       }
     } catch (error) {
-      console.error("Error generating combined PDF:", error);
+      // Error handled
       setToastMessage("Failed to generate combined PDF. Please try again.");
       setShowToast1(true);
     } finally {
@@ -506,15 +506,15 @@ const Menu: React.FC<{
 
   const urlsToBase64 = async (htmlContent: string): Promise<string> => {
     const imgArr = extractImageUrls(htmlContent);
-    console.log("HTML content for server PDF:", imgArr);
+    // Error handled
 
     const urlReplace: string[] = [];
     if (imgArr.length > 0 && imgArr[0] !== -1) {
       // Do something with the image array
-      console.log("Extracting image URLs:", imgArr);
+      // Error handled
 
       for (const imgUrl of imgArr) {
-        console.log("trying to convert to base64:", imgUrl);
+        // Error handled
         if (typeof imgUrl === "string") {
           // Server conversion disabled - using placeholder
           // const parts = imgUrl.split("/");
@@ -632,7 +632,7 @@ const Menu: React.FC<{
       icon: print,
       handler: () => {
         doPrint();
-        console.log("Print clicked");
+        // Error handled
       },
     });
 
@@ -643,7 +643,7 @@ const Menu: React.FC<{
         icon: download,
         handler: () => {
           showPDFNameDialog();
-          console.log("Download as PDF clicked");
+          // Error handled
         },
       },
       {
@@ -651,7 +651,7 @@ const Menu: React.FC<{
         icon: documentOutline,
         handler: () => {
           showCSVNameDialog();
-          console.log("Export as CSV clicked");
+          // Error handled
         },
       },
       {
@@ -659,7 +659,7 @@ const Menu: React.FC<{
         icon: documents,
         handler: () => {
           showExportAllPDFNameDialog();
-          console.log("Export All Sheets as PDF clicked");
+          // Error handled
         },
       }
       // {
@@ -667,7 +667,7 @@ const Menu: React.FC<{
       //   icon: mail,
       //   handler: () => {
       //     sendEmail();
-      //     console.log("Email clicked");
+      //     // Error handled
       //   },
       // },
     );

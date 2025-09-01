@@ -743,7 +743,7 @@ const Home: React.FC = () => {
   return (
     <IonPage
       className={isDarkMode ? "dark-theme" : ""}
-      // style={{ overflow: "hidden", maxHeight: "80vh" }}
+      style={{ height: "100vh", overflow: "hidden" }}
     >
       <IonHeader>
         <IonToolbar color="primary">
@@ -870,7 +870,14 @@ const Home: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen>
+      <IonContent
+        fullscreen
+        scrollY={false}
+        style={{
+          overflow: "hidden",
+          height: "calc(100vh - var(--ion-safe-area-top) - 112px)", // Subtract header heights
+        }}
+      >
         {fileNotFound ? (
           <div
             style={{
@@ -1224,7 +1231,6 @@ const Home: React.FC = () => {
         <DynamicInvoiceForm
           isOpen={showInvoiceForm}
           onClose={() => setShowInvoiceForm(false)}
-          
         />
 
         {/* Floating Action Button for Invoice Edit */}

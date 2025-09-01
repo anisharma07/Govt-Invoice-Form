@@ -181,7 +181,7 @@ export class Local {
 
       return true;
     } catch (error) {
-      console.error("Error updating template ID:", error);
+      // Error handled
       return false;
     }
   };

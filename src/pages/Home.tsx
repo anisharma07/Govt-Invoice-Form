@@ -93,6 +93,7 @@ const Home: React.FC = () => {
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(
     getAutoSaveEnabled()
   );
+  const [autosaveCount, setAutosaveCount] = useState(0);
   const [showSavePopover, setShowSavePopover] = useState(false);
 
   // Color picker state
@@ -251,11 +252,8 @@ const Home: React.FC = () => {
   };
 
   const handleSave = async () => {
-    console.log("💾 handleSave: Starting save", { fileName });
-
     // If no file is selected, can't save
     if (!fileName) {
-      console.log("⚠️ handleSave: No file selected, skipping save");
       return;
     }
 
@@ -601,10 +599,14 @@ const Home: React.FC = () => {
   );
 
   useEffect(() => {
+    setTimeout(() => {
+      handleSave();
+    }, 1500);
+  }, [autosaveCount]);
+  useEffect(() => {
     const debouncedAutoSave = () => {
       // Only auto-save if enabled
       if (!isAutoSaveEnabled) {
-        console.log("⚠️ debouncedAutoSave: Auto-save is disabled, skipping");
         return;
       }
 
@@ -1231,6 +1233,7 @@ const Home: React.FC = () => {
         <DynamicInvoiceForm
           isOpen={showInvoiceForm}
           onClose={() => setShowInvoiceForm(false)}
+          setAutosaveCount={setAutosaveCount}
         />
 
         {/* Floating Action Button for Invoice Edit */}

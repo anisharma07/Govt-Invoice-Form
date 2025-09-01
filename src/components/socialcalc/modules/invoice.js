@@ -7,12 +7,10 @@ if (typeof window !== "undefined" && window.SocialCalc) {
 } else if (typeof global !== "undefined" && global.SocialCalc) {
   SocialCalc = global.SocialCalc;
 } else {
-  console.error("SocialCalc not found in global scope");
   SocialCalc = {}; // Fallback to prevent errors
 }
 
 export function getInvoiceCoordinates() {
-  console.log("=== GET INVOICE COORDINATES ===");
 
   // Invoice coordinates mapping for different sections
   const coordinates = {
@@ -46,8 +44,6 @@ export function getInvoiceCoordinates() {
     },
   };
 
-  console.log("Invoice coordinates mapping:", coordinates);
-  console.log("=== END GET INVOICE COORDINATES ===");
 
   return coordinates;
 }
@@ -92,7 +88,6 @@ function cleanCellValue(rawValue) {
 
   // Log if we cleaned something
   if (originalValue !== cleanValue) {
-    console.log(`Cleaned cell value: "${originalValue}" -> "${cleanValue}"`);
   }
 
   return cleanValue;
@@ -100,12 +95,9 @@ function cleanCellValue(rawValue) {
 
 export function addInvoiceData(invoiceData) {
   return new Promise(function (resolve, reject) {
-    console.log("=== ADD INVOICE DATA START ===");
-    console.log("Invoice data:", invoiceData);
 
     try {
       var control = SocialCalc.GetCurrentWorkBookControl();
-      console.log("Workbook control:", control ? "Found" : "Not found");
 
       if (!control) {
         throw new Error("No workbook control available");
@@ -116,7 +108,6 @@ export function addInvoiceData(invoiceData) {
       }
 
       var currsheet = control.currentSheetButton.id;
-      console.log("Current active sheet:", currsheet);
 
       // Get invoice coordinates
       const coordinates = getInvoiceCoordinates();
@@ -235,7 +226,6 @@ export function addInvoiceData(invoiceData) {
       }
 
       var cmd = commands.join("\n") + "\n";
-      console.log("Generated SocialCalc commands:", cmd);
 
       var commandObj = {
         cmdtype: "scmd",
@@ -244,21 +234,14 @@ export function addInvoiceData(invoiceData) {
         saveundo: false,
       };
 
-      console.log("Command object:", commandObj);
 
       try {
         control.ExecuteWorkBookControlCommand(commandObj, false);
-        console.log("✓ Invoice data added successfully");
-        console.log("=== ADD INVOICE DATA SUCCESS ===");
         resolve(true);
       } catch (execError) {
-        console.error("Error executing command:", execError);
         throw execError;
       }
     } catch (error) {
-      console.error("=== ADD INVOICE DATA ERROR ===");
-      console.error("Error details:", error);
-      console.error("Stack trace:", error.stack);
       reject(error);
     }
   });
@@ -266,12 +249,9 @@ export function addInvoiceData(invoiceData) {
 
 export function getDynamicInvoiceData(cellReferences) {
   return new Promise(function (resolve, reject) {
-    console.log("=== GET DYNAMIC INVOICE DATA START ===");
-    console.log("Cell references to read:", cellReferences);
 
     try {
       var control = SocialCalc.GetCurrentWorkBookControl();
-      console.log("Workbook control:", control ? "Found" : "Not found");
 
       if (!control) {
         throw new Error("No workbook control available");
@@ -282,7 +262,6 @@ export function getDynamicInvoiceData(cellReferences) {
       }
 
       var currsheet = control.currentSheetButton.id;
-      console.log("Current active sheet:", currsheet);
 
       // Get the current sheet object
       var sheet = control.workbook.sheetArr[currsheet]?.sheet;
@@ -322,20 +301,13 @@ export function getDynamicInvoiceData(cellReferences) {
           }
 
           cellData[cellRef] = value;
-          console.log(`Cell ${cellRef} = ${value}`);
         } catch (cellError) {
-          console.warn(`Error reading cell ${cellRef}:`, cellError);
           cellData[cellRef] = "";
         }
       });
 
-      console.log("Retrieved cell data:", cellData);
-      console.log("=== GET DYNAMIC INVOICE DATA SUCCESS ===");
       resolve(cellData);
     } catch (error) {
-      console.error("=== GET DYNAMIC INVOICE DATA ERROR ===");
-      console.error("Error details:", error);
-      console.error("Stack trace:", error.stack);
       reject(error);
     }
   });
@@ -343,13 +315,9 @@ export function getDynamicInvoiceData(cellReferences) {
 
 export function addDynamicInvoiceData(cellData, sheetId) {
   return new Promise(function (resolve, reject) {
-    console.log("=== ADD DYNAMIC INVOICE DATA START ===");
-    console.log("Cell data:", cellData);
-    console.log("Sheet ID:", sheetId);
 
     try {
       var control = SocialCalc.GetCurrentWorkBookControl();
-      console.log("Workbook control:", control ? "Found" : "Not found");
 
       if (!control) {
         throw new Error("No workbook control available");
@@ -360,7 +328,6 @@ export function addDynamicInvoiceData(cellData, sheetId) {
       }
 
       var currsheet = control.currentSheetButton.id;
-      console.log("Current active sheet:", currsheet);
 
       // Build commands to set all values from cellData
       var commands = [];
@@ -369,9 +336,8 @@ export function addDynamicInvoiceData(cellData, sheetId) {
       Object.entries(cellData).forEach(([cellRef, value]) => {
         if (value !== undefined && value !== null) {
           if (value === "") {
-            // Clear the cell if value is empty string
-            commands.push(`set ${cellRef} value`);
-            console.log(`Clearing cell ${cellRef}`);
+            // Clear the cell completely if value is empty string
+            commands.push(`erase ${cellRef} formulas`);
           } else {
             // Determine if the value is numeric or text
             const stringValue = value.toString().trim();
@@ -391,19 +357,16 @@ export function addDynamicInvoiceData(cellData, sheetId) {
                 : stringValue;
               commands.push(`set ${cellRef} text t ${encodedValue}`);
             }
-            console.log(`Setting cell ${cellRef} = ${value}`);
           }
         }
       });
 
       if (commands.length === 0) {
-        console.log("No data to update");
         resolve(true);
         return;
       }
 
       var cmd = commands.join("\n") + "\n";
-      console.log("Generated SocialCalc commands:", cmd);
 
       var commandObj = {
         cmdtype: "scmd",
@@ -412,21 +375,14 @@ export function addDynamicInvoiceData(cellData, sheetId) {
         saveundo: false,
       };
 
-      console.log("Command object:", commandObj);
 
       try {
         control.ExecuteWorkBookControlCommand(commandObj, false);
-        console.log("✓ Dynamic invoice data added successfully");
-        console.log("=== ADD DYNAMIC INVOICE DATA SUCCESS ===");
         resolve(true);
       } catch (execError) {
-        console.error("Error executing command:", execError);
         throw execError;
       }
     } catch (error) {
-      console.error("=== ADD DYNAMIC INVOICE DATA ERROR ===");
-      console.error("Error details:", error);
-      console.error("Stack trace:", error.stack);
       reject(error);
     }
   });
@@ -434,12 +390,9 @@ export function addDynamicInvoiceData(cellData, sheetId) {
 
 export function clearDynamicInvoiceData(cellData) {
   return new Promise(function (resolve, reject) {
-    console.log("=== CLEAR DYNAMIC INVOICE DATA START ===");
-    console.log("Cell data to clear:", cellData);
 
     try {
       var control = SocialCalc.GetCurrentWorkBookControl();
-      console.log("Workbook control:", control ? "Found" : "Not found");
 
       if (!control) {
         throw new Error("No workbook control available");
@@ -450,7 +403,6 @@ export function clearDynamicInvoiceData(cellData) {
       }
 
       var currsheet = control.currentSheetButton.id;
-      console.log("Current active sheet:", currsheet);
 
       // Build commands to clear all values from cellData
       var commands = [];
@@ -501,7 +453,6 @@ export function clearDynamicInvoiceData(cellData) {
       }
 
       var cmd = commands.join("\n") + "\n";
-      console.log("Generated SocialCalc clear commands:", cmd);
 
       var commandObj = {
         cmdtype: "scmd",
@@ -510,21 +461,14 @@ export function clearDynamicInvoiceData(cellData) {
         saveundo: false,
       };
 
-      console.log("Command object:", commandObj);
 
       try {
         control.ExecuteWorkBookControlCommand(commandObj, false);
-        console.log("✓ Dynamic invoice data cleared successfully");
-        console.log("=== CLEAR DYNAMIC INVOICE DATA SUCCESS ===");
         resolve(true);
       } catch (execError) {
-        console.error("Error executing command:", execError);
         throw execError;
       }
     } catch (error) {
-      console.error("=== CLEAR DYNAMIC INVOICE DATA ERROR ===");
-      console.error("Error details:", error);
-      console.error("Stack trace:", error.stack);
       reject(error);
     }
   });
@@ -532,11 +476,9 @@ export function clearDynamicInvoiceData(cellData) {
 
 export function clearInvoiceData() {
   return new Promise(function (resolve, reject) {
-    console.log("=== CLEAR INVOICE DATA START ===");
 
     try {
       var control = SocialCalc.GetCurrentWorkBookControl();
-      console.log("Workbook control:", control ? "Found" : "Not found");
 
       if (!control) {
         throw new Error("No workbook control available");
@@ -547,7 +489,6 @@ export function clearInvoiceData() {
       }
 
       var currsheet = control.currentSheetButton.id;
-      console.log("Current active sheet:", currsheet);
 
       // Get invoice coordinates
       const coordinates = getInvoiceCoordinates();
@@ -589,7 +530,6 @@ export function clearInvoiceData() {
       commands.push(`erase ${coordinates.total.sum} formulas`);
 
       var cmd = commands.join("\n") + "\n";
-      console.log("Generated SocialCalc clear commands:", cmd);
 
       var commandObj = {
         cmdtype: "scmd",
@@ -598,21 +538,14 @@ export function clearInvoiceData() {
         saveundo: false,
       };
 
-      console.log("Command object:", commandObj);
 
       try {
         control.ExecuteWorkBookControlCommand(commandObj, false);
-        console.log("✓ Invoice data cleared successfully");
-        console.log("=== CLEAR INVOICE DATA SUCCESS ===");
         resolve(true);
       } catch (execError) {
-        console.error("Error executing command:", execError);
         throw execError;
       }
     } catch (error) {
-      console.error("=== CLEAR INVOICE DATA ERROR ===");
-      console.error("Error details:", error);
-      console.error("Stack trace:", error.stack);
       reject(error);
     }
   });

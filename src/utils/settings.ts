@@ -18,7 +18,7 @@ export const getSettings = (): AppSettings => {
       return { ...defaultSettings, ...parsed };
     }
   } catch (error) {
-    console.warn("Failed to load settings from localStorage:", error);
+    // Error loading settings, return defaults
   }
   return defaultSettings;
 };
@@ -29,7 +29,7 @@ export const saveSettings = (settings: Partial<AppSettings>): void => {
     const newSettings = { ...currentSettings, ...settings };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
   } catch (error) {
-    console.warn("Failed to save settings to localStorage:", error);
+    // Error saving settings
   }
 };
 
